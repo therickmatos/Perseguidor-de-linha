@@ -11,7 +11,7 @@ O controle é o mesmo do seguidor. Saem os sensores de marca e a contagem de par
 **Estado: compila sem avisos e passa no simulador e no teste do IR; ainda não rodou no robô.** Os ganhos e o freio só se acertam na pista.
 
 ## Regulamento usado
-Perseguidor de Linha da RoboCore, revisão de 12/12/2023 (o TRIF usa as regras da RoboCore no seguidor; conferir no edital se vale o mesmo no perseguidor). O que pesa no firmware:
+Regulamento técnico do Perseguidor de Linha do TRIF 2026 (`referencias/TRIF 2026 - Perseguidor de Linha.pdf`): anexa na íntegra as regras da RoboCore de 12/12/2023 (conferido palavra por palavra com a cópia usada aqui), na classe Pro, e exige partida e parada sem contato físico "conforme as especificações e alternativas previstas no regulamento". O que pesa no firmware:
 - **3.1.1 e 6.4:** o robô liga e para pelo módulo de partida do juiz, sem contato e **sem tempo de segurança**.
 - **6.5:** robô que não para com o comando de parada é **eliminado**.
 - **8.2.3:** vale receptor IR próprio, desde que siga o padrão dos módulos recomendados (JSumo MicroStart, Já-Bots).

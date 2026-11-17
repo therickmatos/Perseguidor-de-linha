@@ -1,5 +1,8 @@
 # Referências
 
+## TRIF 2026 - Perseguidor de Linha.pdf
+Regulamento técnico do Perseguidor de Linha do 7º TRIF (2026): folha de aplicação do torneio + regras da RoboCore de 12/12/2023 na íntegra.
+
 ## eva-rt/
 Parte do repositório [EXOTIC-TEAM-MX/EVA-RT](https://github.com/EXOTIC-TEAM-MX/EVA-RT) (commit `d630829`), copiada do repositório do seguidor (`therickmatos/Seguidor-de-linha`, `referencias/eva-rt/`). Só o que as ferramentas de `ferramentas/pecas_3d/` leem.
 © EXOTIC TEAM MX, licença AGPL-3.0 (`eva-rt/LICENSE`).

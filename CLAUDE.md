@@ -11,7 +11,7 @@ Perseguidor **RUSH - Dreamcast**. É a placa irmã do seguidor RUSH - SATURN (re
 - O circuito é o do Saturn, sem as abas dos 4 sensores de marca, mais o receptor IR KY-022 (J6) no A5.
 - O circuito é baseado no EVA-RT (EXOTIC TEAM MX, AGPL-3.0). Manter o crédito e a licença em qualquer arquivo derivado.
 - Fluxo: EasyEDA Pro → Gerber → JLC.
-- Regulamento: Perseguidor de Linha da RoboCore (12/12/2023): largada e parada pelo módulo de início do juiz, sem tempo de segurança; sem marcas de curva; duas linhas de partida de 200 mm em retas.
+- Regulamento: TRIF 2026, que anexa o Perseguidor de Linha da RoboCore (12/12/2023) na íntegra (`referencias/TRIF 2026 - Perseguidor de Linha.pdf`): largada e parada pelo módulo de partida, sem contato e sem tempo de segurança; receptor IR próprio só se seguir o padrão dos módulos JSumo/Já-Bots (8.2.3); bluetooth só se não der (8.3); sem marcas de curva; duas linhas de partida de 200 mm em retas.
 
 ## Arquivos
 | Pasta | Conteúdo |
