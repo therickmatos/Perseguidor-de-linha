@@ -1,14 +1,18 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: AGPL-3.0-or-later
-"""Monta a pasta mecânica/stl/ do perseguidor RUSH - Dreamcast: patim da barra V1,
-presilha da vareta para a base de 1,6 mm e os STL do EVA-RT que sao impressos como
-estao (mais a caixa de reducao espelhada).
+"""Monta a pasta mecânica/stl/ do perseguidor RUSH - Dreamcast v4 (base e barra V1
+de 1,6 mm): patim da barra V1, presilha da vareta com assento, placa de succao com
+folga para as cabecas dos parafusos e os STL do EVA-RT que sao impressos como estao
+(mais a caixa de reducao espelhada), separados por filamento (stl/PETG/ e stl/PLA/).
 
-Baseado nas pecas `sensor_sledge.stl` e `barilla_clamp.stl` do EVA-RT
-(c) EXOTIC TEAM MX, AGPL-3.0 - https://github.com/EXOTIC-TEAM-MX/EVA-RT
+Baseado nas pecas `sensor_sledge.stl`, `barilla_clamp.stl` e `suction_base.stl` do
+EVA-RT (c) EXOTIC TEAM MX, AGPL-3.0 - https://github.com/EXOTIC-TEAM-MX/EVA-RT
 As medidas foram tiradas dos STL originais (referencias/eva-rt/3d_models/).
 Adaptado do gerador do seguidor RUSH - SATURN (therickmatos/Seguidor-de-linha):
-o patim e o mesmo; muda a presilha, porque a base do Dreamcast tem 1,6 mm.
+o patim e o mesmo; a presilha sem o braco de baixo e daqui (base de 1,6 mm); o
+assento da presilha, a placa de succao com rebaixo e a separacao PLA/PETG vieram
+de la. Aqui nao ha asa: a mesma presilha serve nas 4 posicoes, com a parede na
+borda em x = +-50, e o bloco da transversal e o barilla_connection como esta.
 
 Referencial LOCAL das pecas (o mesmo dos STL originais, que e o de impressao):
     origem = eixo da vareta, na face de tras da peca
@@ -16,7 +20,7 @@ Referencial LOCAL das pecas (o mesmo dos STL originais, que e o de impressao):
     +y = para cima
     +z = ao longo da vareta, para a frente (a peca e impressa com z para cima)
 
-Uso:  python3 gerar_pecas.py            # grava em mecânica/stl/
+Uso:  python3 gerar_pecas.py            # grava em mecânica/stl/PETG/ e stl/PLA/
       python3 gerar_pecas.py --conferir # so reconstroi os originais e compara
 Requer: numpy, manifold3d e trimesh (ver requisitos.txt).
 """
@@ -31,7 +35,7 @@ from manifold3d import CrossSection, Manifold, set_circular_segments
 
 RAIZ = Path(__file__).resolve().parents[2]
 MECANICA = RAIZ / "mecânica"
-SAIDA = MECANICA / "stl"
+SAIDA = MECANICA / "stl"   # uma subpasta por filamento: stl/PETG/ e stl/PLA/
 ORIGINAIS = RAIZ / "referencias" / "eva-rt" / "3d_models"
 ESP_BASE = 1.6             # base RUSH - Dreamcast v4 (pedido na JLC: FR-4 1,6 mm)
 ESP_BARRA = 1.6            # barra V1 (medida pelo Erick em 17/11/2026)
@@ -53,10 +57,29 @@ X_VARETA = X_FURO_BASE + DESL_PRESILHA          # 48,45: onde a presilha poe a v
 DESL_PATIM_V1 = X_VARETA - X_FURO_V1            # 3,824
 BORDA_V1_LOCAL = X_VARETA - X_BORDA_V1          # +0,198: a borda da V1 fica sob a vareta
 
-# barilla_clamp fica de fora: o rasgo dele e de 1,0 mm (ver presilha() abaixo)
+# Ficam de fora: barilla_clamp (rasgo de 1,0 mm, ver presilha()), sensor_sledge (barra
+# VISION, ver patim()) e suction_base (substituida por placa_succao(), mesma peca com um
+# rebaixo para a cabeca do parafuso em cada pe).
+# O barilla_connection entra como esta: no Dreamcast nao ha placa embaixo do bloco.
 EVA_COMO_ESTAO = ["gearbox.stl", "wheel_rim.stl", "impeller_base_1.stl", "impeller_base_2.stl",
-                  "impeller_fan.stl", "suction_base.stl", "battery_holder.stl", "bead.stl",
-                  "barilla_connection.stl"]
+                  "impeller_fan.stl", "battery_holder.stl", "bead.stl", "barilla_connection.stl"]
+
+# Placa de succao (suction_base.stl, 0,6 mm): pes da carcaca da ventoinha em
+# (+-15,556; +-15,556) no robo = (+-15,556; 11,944 e 43,056) no STL (y do STL = y + 27,5).
+PES_SUCCAO_STL = [(sx * 15.556, 27.5 + sy * 15.556) for sx in (-1, 1) for sy in (-1, 1)]
+D_REBAIXO = 4.4            # cabeca M2 de O3,8 + folga
+FUNDO_REBAIXO = 0.2        # plastico que fica entre a cabeca e a base (isola as vias)
+
+# Filamento de cada peca (so PLA e PETG; ver mecânica/README.md, "Só PLA e PETG").
+# PETG: sob aperto de parafuso ou perto de motor. PLA: aro (alojamento do
+# rolamento mais preciso) e pecas sem esforco.
+PLA = {"wheel_rim.stl", "battery_holder.stl", "bead.stl"}
+
+
+def destino(nome: str) -> Path:
+    pasta = SAIDA / ("PLA" if nome in PLA else "PETG")
+    pasta.mkdir(parents=True, exist_ok=True)
+    return pasta / nome
 
 R_VARETA = 1.5             # vareta de carbono O3
 R_FURO = 1.0               # parafuso M2 (O2,0 como nos originais)
@@ -176,7 +199,7 @@ def patim(esp_pcb=1.0, desl=DESL_PATIM_V1, borda_pcb=BORDA_V1_LOCAL,
 # Presilha da vareta na base (barilla_clamp)
 # ----------------------------------------------------------------------------
 def presilha(esp_pcb=1.0, folga_rasgo=0.0, desl=DESL_PRESILHA, x_fim=7.0,
-             braco_baixo=True) -> Manifold:
+             braco_baixo=True, assento=False) -> Manifold:
     """Presilha da vareta na borda da base.
 
     braco_baixo  True = como o barilla_clamp do EVA-RT (rasgo que abraca a placa).
@@ -185,6 +208,13 @@ def presilha(esp_pcb=1.0, folga_rasgo=0.0, desl=DESL_PRESILHA, x_fim=7.0,
                  o parafuso aperta o braco de cima direto na placa, com a cabeca
                  embaixo da placa. Para a base de 1,6 mm: com o braco de baixo, a
                  cabeca do parafuso ficaria na altura da pista.
+    assento      False = canal em U aberto para a placa, como no original: sob a
+                 vareta sobra 1 mm de vao e a altura dela depende so do aperto do
+                 canal (e de cola). True = canal fechado embaixo (furo O3 inteiro):
+                 a vareta fica presa para cima e para baixo. Para PLA/PETG, que
+                 seguram por aperto bem menos que filamento com fibra de carbono,
+                 e o PETG cola mal com cianoacrilato. A vareta entra pela ponta.
+                 (Vem do seguidor RUSH - SATURN.)
     """
     comp = 4.5
     y_topo_pcb = -2.5                            # eixo da vareta 2,5 mm acima da base
@@ -196,13 +226,42 @@ def presilha(esp_pcb=1.0, folga_rasgo=0.0, desl=DESL_PRESILHA, x_fim=7.0,
     if braco_baixo:
         corpo += ret(-2.5, x_fim, y_base, y_base_pcb)        # braco de baixo
     corpo -= circ(R_VARETA)
-    corpo -= ret(-R_VARETA, R_VARETA, y_base_pcb, 0)
+    if not assento:
+        corpo -= ret(-R_VARETA, R_VARETA, y_base_pcb, 0)
     return extr_z(corpo, 0, comp) - furo_y(desl, comp / 2)
 
 
 def presilha_base():
-    """A presilha usada no perseguidor (base de 1,6 mm)."""
-    return presilha(ESP_BASE, folga_rasgo=0.1, braco_baixo=False)
+    """A presilha usada no perseguidor (base de 1,6 mm), a mesma nas 4 posicoes:
+    sem braco de baixo, parede encostada na borda reta em x = +-50 e assento."""
+    return presilha(ESP_BASE, folga_rasgo=0.1, braco_baixo=False, assento=True)
+
+
+# ----------------------------------------------------------------------------
+# Placa de succao (suction_base)
+# ----------------------------------------------------------------------------
+def carregar_original(nome) -> Manifold:
+    import trimesh
+    from manifold3d import Mesh
+    t = trimesh.load(ORIGINAIS / nome)
+    return Manifold(Mesh(vert_properties=np.asarray(t.vertices, dtype=np.float32),
+                         tri_verts=np.asarray(t.faces, dtype=np.uint32)))
+
+
+def placa_succao(d=D_REBAIXO, fundo=FUNDO_REBAIXO) -> Manifold:
+    """suction_base.stl com um rebaixo de O4,4 na face de baixo em cada pe.
+
+    No EVA-RT a cabeca do parafuso que prende os pes da carcaca aperta a placa de
+    succao (0,6 mm) contra a base. Com a base de 1,6 mm a cabeca ficaria a ~0,2 mm
+    da pista. Com o rebaixo ela entra na placa e fica a 0,6 mm da pista; o fundo
+    de 0,2 mm continua isolando a cabeca das vias que ha embaixo dela (PWMA_D5,
+    PWMB_D6 e GND nos pes de tras). No STL, z = 0,6 e a face que encosta na base;
+    o rebaixo abre na face z = 0 (virada para a pista). (Vem do seguidor.)"""
+    m = carregar_original("suction_base.stl")
+    esp = m.bounding_box()[5]
+    for x, y in PES_SUCCAO_STL:
+        m -= Manifold.cylinder(1.0 + esp - fundo, d / 2).translate((x, y, -1.0))
+    return m
 
 
 # ----------------------------------------------------------------------------
@@ -235,14 +294,7 @@ def espelhar(m: Manifold) -> Manifold:
 
 def conferir():
     """Reconstroi as pecas originais com os mesmos parametros e compara."""
-    import trimesh
-    from manifold3d import Mesh
-
-    def carregar(nome):
-        t = trimesh.load(ORIGINAIS / nome)
-        return Manifold(Mesh(vert_properties=np.asarray(t.vertices, dtype=np.float32),
-                             tri_verts=np.asarray(t.faces, dtype=np.uint32)))
-
+    carregar = carregar_original
     casos = [
         ("sensor_sledge.stl", patim(1.0, DESL_PATIM_EVA, folga_rasgo=0.0,
                                     topo_reto=None, assento=False)),
@@ -271,26 +323,22 @@ def main():
     ok = conferir()
     if args.conferir:
         raise SystemExit(0 if ok else 1)
-    SAIDA.mkdir(parents=True, exist_ok=True)
-    print(f"STL em {SAIDA.relative_to(RAIZ)}/:")
+    print(f"STL em {SAIDA.relative_to(RAIZ)}/PETG/ e PLA/:")
     # o patim depende da espessura da barra V1; a presilha, da base
     p = patim(ESP_BARRA)
-    gravar_stl(p, SAIDA / f"patim_v1_direito_barra{ESP_BARRA:.1f}.stl", f"patim V1 direito barra {ESP_BARRA:.1f}")
-    gravar_stl(espelhar(p), SAIDA / f"patim_v1_esquerdo_barra{ESP_BARRA:.1f}.stl",
+    gravar_stl(p, destino(f"patim_v1_direito_barra{ESP_BARRA:.1f}.stl"), f"patim V1 direito barra {ESP_BARRA:.1f}")
+    gravar_stl(espelhar(p), destino(f"patim_v1_esquerdo_barra{ESP_BARRA:.1f}.stl"),
                f"patim V1 esquerdo barra {ESP_BARRA:.1f}")
-    gravar_stl(presilha_base(), SAIDA / "presilha_vareta_base1.6.stl", "presilha da vareta base 1.6")
-    # pecas do EVA-RT usadas como estao (o sensor_sledge fica de fora: substituido pelo patim V1)
+    gravar_stl(presilha_base(), destino("presilha_vareta_base1.6.stl"), "presilha da vareta base 1.6")
+    gravar_stl(placa_succao(), destino("placa_succao_rebaixo.stl"), "placa de succao com rebaixo")
+    # pecas do EVA-RT usadas como estao
     import shutil
     for nome in EVA_COMO_ESTAO:
-        shutil.copyfile(ORIGINAIS / nome, SAIDA / nome)
+        shutil.copyfile(ORIGINAIS / nome, destino(nome))
     print(f"  copiados sem alteracao de {ORIGINAIS.relative_to(RAIZ)}/: {', '.join(EVA_COMO_ESTAO)}")
     # o gearbox.stl e o do lado direito (pinhao para fora em +x); o esquerdo e o espelho dele
-    import trimesh
-    from manifold3d import Mesh
-    t = trimesh.load(ORIGINAIS / "gearbox.stl")
-    cx = Manifold(Mesh(vert_properties=np.asarray(t.vertices, dtype=np.float32),
-                       tri_verts=np.asarray(t.faces, dtype=np.uint32)))
-    gravar_stl(espelhar(cx), SAIDA / "gearbox_esquerdo_espelhado.stl", "gearbox espelhado (lado esquerdo)")
+    gravar_stl(espelhar(carregar_original("gearbox.stl")), destino("gearbox_esquerdo_espelhado.stl"),
+               "gearbox espelhado (lado esquerdo)")
 
 
 if __name__ == "__main__":

@@ -1,13 +1,17 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: AGPL-3.0-or-later
-"""Monta em 3D a base RUSH - Dreamcast v4, as varetas, as presilhas, a barra V1,
-o patim, os parafusos e o receptor IR, mede interferencias, folgas e a altura
-ate a pista e desenha as figuras de conferencia.
+"""Monta em 3D a base RUSH - Dreamcast v4 (placa encomendada, 1,6 mm), as varetas,
+as presilhas, a barra V1, o patim, os parafusos, a placa de succao, o receptor IR e
+os componentes de baixo (D1, R20 a R22, J3), mede interferencias, folgas e a altura
+ate a pista, lista as vias sob as cabecas de parafuso e desenha as figuras de
+conferencia.
 
 Le direto do repositorio: o .epro da placa, o Gerber da V1 e da VISION e os STL
 do EVA-RT ((c) EXOTIC TEAM MX, AGPL-3.0). Referencial do robo: origem no centro
 da ventoinha, +x direita, +y frente, z = 0 na face de cima da base.
-Adaptado da conferencia do seguidor RUSH - SATURN (therickmatos/Seguidor-de-linha).
+Adaptado da conferencia do seguidor RUSH - SATURN (therickmatos/Seguidor-de-linha),
+de onde vieram tambem o rebaixo da placa de succao (cabecas dos pes) e os
+componentes da face de baixo.
 
 Uso: python3 conferir_montagem.py [--furos 63.14] [--esp-barra 1.6]
 """
@@ -42,6 +46,7 @@ MIL = 0.0254
 
 # Cotas da montagem
 ESP_BASE = gp.ESP_BASE          # 1,6 mm (o barilla_clamp do EVA-RT e para 1,0 mm)
+ESP_SUCCAO = 0.6                # suction_base.stl
 Y_FUROS_BASE = (-1.75, 10.75)   # furos das presilhas
 Z_VARETA = 2.5                  # eixo da vareta acima da face de cima da base
 Y_TRANSVERSAL = 19.745          # eixo da vareta transversal no desenho do EVA-RT
@@ -57,6 +62,11 @@ Z_PISTA = Z_VARETA - 6.5
 CABECA_M2 = (1.9, 1.6)
 PORCA_M2 = (2.0, 1.6)
 FUROS_CAIXA = ((-35.25, -26.55), (-35.25, -3.733), (35.25, -26.55), (35.25, -3.733))
+PES_CARCACA = [(sx * 15.556, sy * 15.556) for sx in (-1, 1) for sy in (-1, 1)]
+# Componentes da face de baixo (envelopes: corpo + pads; altura maxima do datasheet).
+# No Dreamcast sao D1 (SOD-123: 3,7 com os terminais x 1,6 x 1,35) e R20 a R22
+# (0603: 2,4 nos pads x 0,95 x 0,55). J3 e J5 sao so pads (J3 tem envelope proprio).
+ENVELOPE_BAIXO = {"D": (3.7, 1.6, 1.35), "R": (2.4, 0.95, 0.55), "C": (2.4, 0.95, 0.9)}
 # Receptor IR KY-022 em pe na femea 1x3 do J6 (medidas tipicas do modulo, nao medidas):
 # femea 2,54 x 7,62 x 8,5; placa do modulo 15 (largura) x 18,5 (altura) x 1,6, a ~1,5 mm
 # acima da femea; receptor de ~6 mm saindo de uma das faces (para dentro ou para fora).
@@ -70,11 +80,16 @@ J3_BORDA = -30.0
 # ----------------------------------------------------------------------------
 # Leitura dos arquivos de placa
 # ----------------------------------------------------------------------------
-def ler_epro(caminho: Path):
-    """Contorno (poligono), furos [(x, y, d)] e componentes {ref: (x, y, face)}."""
+def ler_linhas(caminho: Path):
     with zipfile.ZipFile(caminho) as z:
         nome = next(n for n in z.namelist() if n.endswith(".epcb"))
-        linhas = [json.loads(l) for l in z.read(nome).decode().splitlines() if l.strip()]
+        return [json.loads(l) for l in z.read(nome).decode().splitlines() if l.strip()]
+
+
+def ler_epro(caminho: Path):
+    """Contorno (poligono), furos [(x, y, d)] e componentes
+    {ref: (x, y, face, rotacao)}, em mm."""
+    linhas = ler_linhas(caminho)
     # Contorno (camada 11). Os arcos (ARC: x0, y0, "ARC", angulo, x1, y1) sao os
     # arredondados do entalhe onde o Saturn tem o braco: entram como corda
     # (raio ~0,6 mm, erro < 0,05 mm).
@@ -89,9 +104,14 @@ def ler_epro(caminho: Path):
     furos = [(r[7][0][1] * MIL, r[7][0][2] * MIL, 2 * r[7][0][3] * MIL)
              for r in linhas if r[0] == "FILL" and r[7][0][0] == "CIRCLE"]
     ref = {r[3]: r[8] for r in linhas if r[0] == "ATTR" and r[7] == "Designator"}
-    comps = {ref[r[1]]: (r[4] * MIL, r[5] * MIL, r[3]) for r in linhas
+    comps = {ref[r[1]]: (r[4] * MIL, r[5] * MIL, r[3], r[6]) for r in linhas
              if r[0] == "COMPONENT" and r[1] in ref}
     return contorno, furos, comps
+
+
+def ler_vias(caminho: Path):
+    """Vias [(rede, x, y, d_anel)] em mm (todas tented no pedido da JLC)."""
+    return [(r[3], r[5] * MIL, r[6] * MIL, r[8] * MIL) for r in ler_linhas(caminho) if r[0] == "VIA"]
 
 
 def ler_gerber(texto: str):
@@ -205,6 +225,16 @@ def bloco_transversal(lado: int, y_eixo: float) -> Manifold:
     return b.transform([[0, 1, 0, -gp.X_VARETA], [0, 0, 1, y_eixo - 3.5], [1, 0, 0, Z_VARETA]])
 
 
+def componente_baixo(ref, x, y, rot) -> Manifold | None:
+    """Envelope de um componente da face de baixo (pendurado sob a base)."""
+    env = ENVELOPE_BAIXO.get(ref[0])
+    if env is None:
+        return None
+    c, l, h = env
+    m = Manifold.cube((c, l, h), center=True).rotate((0, 0, rot))
+    return m.translate((x, y, -ESP_BASE - h / 2))
+
+
 def montar(dist_furos: float, esp_barra: float, patim_dir: Manifold, desl_patim: float, x_vareta_barra=None):
     """Devolve dict nome -> Manifold e dados da montagem."""
     contorno, furos, comps = ler_epro(EPRO)
@@ -239,8 +269,16 @@ def montar(dist_furos: float, esp_barra: float, patim_dir: Manifold, desl_patim:
     # caixas de reducao: so os parafusos (cabeca por baixo da base; a caixa fica em cima)
     for k, (xc, yc) in enumerate(FUROS_CAIXA):
         s[f"cabeca_caixa_{k}"] = cil_z(xc, yc, -ESP_BASE - CABECA_M2[1], -ESP_BASE, CABECA_M2[0])
-    # placa de succao por baixo da base, centrada na ventoinha (furos nos pes da carcaca)
-    s["placa_succao"] = stl("suction_base.stl").translate((0, -27.5, -ESP_BASE - 0.6))
+    # placa de succao por baixo da base, centrada na ventoinha (furos nos pes da carcaca),
+    # com rebaixo: a cabeca do parafuso dos pes apoia no fundo de 0,2 mm
+    s["placa_succao"] = gp.placa_succao().translate((0, -27.5, -ESP_BASE - ESP_SUCCAO))
+    z_cab = -ESP_BASE - gp.FUNDO_REBAIXO
+    for k, (xp, yp) in enumerate(PES_CARCACA):
+        s[f"cabeca_pe_{k}"] = cil_z(xp, yp, z_cab - CABECA_M2[1], z_cab, CABECA_M2[0])
+    # componentes da face de baixo
+    for ref, (xc, yc, face, rot) in comps.items():
+        if face == 2 and (m := componente_baixo(ref, xc, yc, rot)) is not None:
+            s[f"baixo_{ref}"] = m
     # J3 deitado: pinos sob os pads, corpo atras da borda, centrado no pino
     j3 = comps["J3"]
     zp = -ESP_BASE - J3_PINO / 2
@@ -286,10 +324,12 @@ def relatorio(s, d, esp_barra):
                   (f"patim_{lado}", "barra_v1"), (f"patim_{lado}", f"vareta_{lado}"),
                   (f"vareta_{lado}", "barra_v1"), (f"vareta_{lado}", "base"),
                   (f"parafuso_patim_{lado}", "barra_v1"), (f"bloco_{lado}", "base"),
-                  (f"bloco_{lado}", f"presilha_{lado}_1")]
+                  (f"bloco_{lado}", f"presilha_{lado}_1"), (f"vareta_{lado}", f"bloco_{lado}")]
     for lado in ("dir", "esq"):
         for i in (0, 1):
-            pares += [(f"parafuso_presilha_{lado}_{i}", f"presilha_{lado}_{i}"),
+            # a vareta atravessa o furo fechado (assento) das duas presilhas
+            pares += [(f"vareta_{lado}", f"presilha_{lado}_{i}"),
+                      (f"parafuso_presilha_{lado}_{i}", f"presilha_{lado}_{i}"),
                       (f"porca_presilha_{lado}_{i}", f"vareta_{lado}")]
     pares += [("vareta_transversal", "carcaca_ventoinha"), ("vareta_transversal", "J2_barra_de_pinos"),
               ("vareta_transversal", "J2_com_cabo"),
@@ -299,12 +339,39 @@ def relatorio(s, d, esp_barra):
               ("KY022_modulo", "carcaca_ventoinha"), ("KY022_modulo", "bloco_esq"),
               ("J6_femea", "vareta_esq"), ("J6_femea", "presilha_esq_1"),
               ("J3_corpo", "base"), ("J3_corpo", "placa_succao")]
-    pior = 0.0
+    pares += [(f"cabeca_pe_{k}", "placa_succao") for k in range(4)]
+    pior = 0.0      # maior interferencia fora a parede da presilha na borda (aceita)
+    parede = 0.0    # quanto a parede da presilha entra na borda da base (mm)
     for a, b in pares:
         v = inter(s[a], s[b])
         g = folga(s[a], s[b]) if v < 1e-6 else 0.0
-        pior = max(pior, v)
-        print(f"  {a:22s} x {b:20s} interferencia {v:7.3f}   folga {g:6.3f}")
+        extra = ""
+        if a.startswith("presilha_") and b == "base" and v > 1e-6:
+            # largura da interseccao no meio da espessura da base (o braco de cima so
+            # apoia na face de cima, e esse contato nao conta)
+            x0, _, x1, _ = (s[a] ^ s[b]).slice(-ESP_BASE / 2).bounds()
+            parede = max(parede, x1 - x0)
+            extra = f"   (parede na borda: entra {x1 - x0:.3f} mm em x)"
+            if x1 - x0 > 0.06:          # so os 0,05 mm do original sao aceitos
+                pior = max(pior, v)
+        else:
+            pior = max(pior, v)
+        print(f"  {a:22s} x {b:20s} interferencia {v:7.3f}   folga {g:6.3f}{extra}")
+    # cabecas de parafuso x componentes da face de baixo (so os que ficam a menos de 2 mm)
+    cabecas = [n for n in s if n.startswith("cabeca_")]
+    baixo = [n for n in s if n.startswith("baixo_")]
+    perto = (9.9, "", "")
+    for c in cabecas:
+        for n in baixo:
+            v = inter(s[c], s[n])
+            g = folga(s[c], s[n], 10.0) if v < 1e-6 else 0.0
+            perto = min(perto, (g, c, n))
+            if g < 2.0:
+                pior = max(pior, v)
+                print(f"  {c:22s} x {n:20s} interferencia {v:7.3f}   folga {g:6.3f}")
+    if perto[0] >= 2.0:
+        print(f"  cabecas x componentes de baixo ({', '.join(n[6:] for n in baixo)}): nenhum a menos de 2 mm;"
+              f" o mais perto e {perto[2][6:]}, a {perto[0]:.2f} mm de {perto[1]}")
     # parafuso do patim: tem de passar livre pelos dois bracos
     print("  (a transversal encosta na base e nas orelhas dos pes da frente da carcaca: folga ~0 e o esperado)")
     # a porca apoia no braco de cima da presilha; o que importa e a folga ate o ressalto da vareta
@@ -320,8 +387,26 @@ def relatorio(s, d, esp_barra):
         v = inter(s[f"parafuso_patim_{lado}"], s[f"patim_{lado}"])
         print(f"  parafuso_patim_{lado:5s}   x patim_{lado:14s} interferencia {v:7.3f}   (furo alinhado se 0)")
         pior = max(pior, v)
+    # vias (tented) embaixo das cabecas de parafuso que apoiam na face de baixo da base
+    print("\nVias sob as cabecas de parafuso (anel da via dentro do circulo da cabeca, O3,8):")
+    centros = [(f"pe da carcaca ({x:+.2f}; {y:+.2f})", x, y) for x, y in PES_CARCACA]
+    centros += [(f"presilha ({sx * gp.X_FURO_BASE:+.2f}; {yf:+.2f})", sx * gp.X_FURO_BASE, yf)
+                for sx in (-1, 1) for yf in Y_FUROS_BASE]
+    centros += [(f"caixa ({x:+.2f}; {y:+.2f})", x, y) for x, y in FUROS_CAIXA]
+    for rot, cx, cy in centros:
+        achou = []
+        for rede, x, y, d_anel in ler_vias(EPRO):
+            dist = math.hypot(x - cx, y - cy) - d_anel / 2      # do centro do furo a borda do anel
+            if dist < CABECA_M2[0] + 0.3:
+                lugar = "embaixo" if dist < CABECA_M2[0] else f"{dist - CABECA_M2[0]:.2f} mm fora da borda"
+                achou.append(f"{rede} ({x:.2f}; {y:.2f}) {lugar}")
+        if achou:
+            sob = "fundo de 0,2 mm do rebaixo" if rot.startswith("pe") else "cabeca direto na mascara"
+            print(f"  {rot:30s} [{sob}]: " + "; ".join(achou))
+    print("  (as demais cabecas nao tem via a menos de 0,3 mm da borda)")
     print(f"\nAltura ate a pista (pista em z = {Z_PISTA:+.1f}, vareta nivelada; base de {ESP_BASE:.1f} mm):")
     grupos = [("base (face de baixo)", ["base"]), ("placa de succao", ["placa_succao"]),
+              ("cabeca do parafuso dos pes da carcaca", [n for n in s if n.startswith("cabeca_pe")]),
               ("presilhas", [n for n in s if n.startswith("presilha_")]),
               ("cabeca do parafuso das presilhas", [n for n in s if n.startswith("cabeca_presilha")]),
               ("cabeca do parafuso das caixas", [n for n in s if n.startswith("cabeca_caixa")]),
@@ -329,13 +414,19 @@ def relatorio(s, d, esp_barra):
               ("barra V1 (face de baixo)", ["barra_v1"]),
               ("cabeca do parafuso dos patins", [n for n in s if n.startswith("cabeca_patim")]),
               ("J3 deitado (parte preta)", ["J3_corpo"]),
+              ("D1 (SOD-123)", ["baixo_D1"]),
+              ("resistores 0603 de baixo (R20 a R22)", [n for n in s if n.startswith(("baixo_R", "baixo_C"))]),
               ("esqui do patim", ["patim_dir", "patim_esq"])]
     alturas = {}
     for rot, nomes in grupos:
         zmin = min(s[n].bounding_box()[2] for n in nomes)
         alturas[rot] = zmin - Z_PISTA
-        print(f"  {rot:34s} {zmin - Z_PISTA:5.2f} mm")
+        print(f"  {rot:38s} {zmin - Z_PISTA:5.2f} mm")
     d["alturas"] = alturas
+    z_orig = -ESP_BASE - ESP_SUCCAO - CABECA_M2[1]
+    print(f"  (com a suction_base original a cabeca dos pes ficaria em cima da placa: {z_orig - Z_PISTA:.2f} mm;"
+          f" sem o fundo do rebaixo, direto na base: {-ESP_BASE - CABECA_M2[1] - Z_PISTA:.2f} mm)")
+    d["parede"] = parede
     L = d["y0_barra"] + 6.957733 + 22.5877
     print(f"\nFuro da barra em y = {d['y_furo_barra']:.3f}; origem da V1 em y = {d['y0_barra']:.3f}; "
           f"L (eixo das rodas -> sensores centrais) = {L:.2f} mm")
@@ -417,7 +508,8 @@ def fig_planta(s, d, dist_furos, arq):
     ax.text(-30, -21.3, "eixo das rodas", color="#0050a0", fontsize=8)
     ax.text(0, d["y0_barra"] + 14.5, "barra V1 (12× QRE1113)", ha="center", fontsize=9)
     ax.text(-22, -29, "base Dreamcast v4", ha="center", fontsize=9, color="white", zorder=30)
-    ax.text(62, 9.5, f"presilhas\n(base {ESP_BASE:.1f} mm)", fontsize=8, color=CORES["presilha"], ha="left")
+    ax.text(62, 9.5, f"presilhas (4 iguais):\nparede na borda x = 50,\nassento sob a vareta",
+            fontsize=8, color=CORES["presilha"], ha="left")
     j6 = d["comps"]["J6"]
     ax.annotate("J6 + KY-022\n(envelope, receptor\npara qualquer lado)", (j6[0] - 6, j6[1] + 3), (-79, 30),
                 fontsize=8, color=CORES["KY022"], arrowprops=dict(arrowstyle="-", color=CORES["KY022"], lw=0.6),
@@ -522,9 +614,11 @@ def fig_corte_presilha(arq):
     contorno, furos, _ = ler_epro(EPRO)
     base = placa(contorno, furos, ESP_BASE, 0.0)
     yf = Y_FUROS_BASE[1]
-    casos = [("Presilha com braço de baixo (reserva do seguidor)", gp.presilha(ESP_BASE, 0.1, braco_baixo=True), True),
-             ("Presilha sem braço de baixo (usada aqui)", gp.presilha_base(), False)]
-    fig, axs = plt.subplots(1, 2, figsize=(14, 5.6), sharey=True)
+    casos = [("Como o barilla_clamp, com rasgo de 1,7 mm:\nbraço de baixo e canal aberto (não usada)",
+              gp.presilha(ESP_BASE, 0.1, braco_baixo=True), True),
+             ("Usada aqui (as 4 iguais): sem braço de baixo,\nparede na borda x = 50 e assento sob a vareta",
+              gp.presilha_base(), False)]
+    fig, axs = plt.subplots(1, 2, figsize=(14, 6.0), sharey=True)
     for ax, (tit, pec, braco) in zip(axs, casos):
         m = no_robo(pec, 1, yf - 2.25)
         vareta = cil_y(gp.X_VARETA, Z_VARETA, yf - 6, yf + 6, gp.R_VARETA)
@@ -549,13 +643,24 @@ def fig_corte_presilha(arq):
              desl=(0.4, 0), ha="left", cor_=cor_)
         ax.text(xf, z_baixo - hc - 0.35, "cabeça M2 (1,6 mm)", fontsize=7, ha="center", va="top", color="#444444",
                 zorder=21)
-        ax.set_title(f"{tit}\nbase {ESP_BASE:.1f} mm, folga da cabeça até a pista {folga:+.1f} mm".replace(".", ","),
+        # embaixo da vareta: vao de 1 mm ate a placa (canal aberto) ou assento
+        xv, zb_v = gp.X_VARETA, Z_VARETA - gp.R_VARETA
+        if braco:
+            cota(ax, (xv, 0.0), (xv, zb_v), "vão de 1 mm\nsob a vareta", desl=(2.7, 0), ha="left",
+                 cor_="#c00000", fs=8)
+        else:
+            ax.annotate("assento", (xv, 0.5), (xv + 2.4, -0.9), fontsize=8, color="#0050a0", ha="left",
+                        arrowprops=dict(arrowstyle="-", color="#0050a0", lw=0.7), zorder=25)
+            ax.annotate("parede na borda\n(entra 0,05 mm)", (50.02, -0.8), (50.6, -2.9), fontsize=7.5,
+                        color="#444444", ha="left", arrowprops=dict(arrowstyle="-", color="#444444", lw=0.6),
+                        zorder=25)
+        ax.set_title(f"{tit}\nbase {ESP_BASE:.1f} mm, cabeça do parafuso a {folga:+.1f} mm da pista".replace(".", ","),
                      fontsize=10)
         ax.set_aspect("equal")
-        ax.set_xlim(38, 53)
+        ax.set_xlim(38, 53.5)
         ax.set_ylim(Z_PISTA - 1.2, 5.5)
         ax.grid(alpha=0.25)
-        ax.set_xlabel(f"x (mm) — lado direito, corte em y = {yf}")
+        ax.set_xlabel(f"x (mm) — lado direito, visto de trás, corte em y = {yf}".replace(".", ","))
     axs[0].set_ylabel("z (mm), 0 = face de cima da base")
     fig.tight_layout()
     fig.savefig(arq, dpi=110)
@@ -613,7 +718,8 @@ def main():
         fig_patim_3d(a.esp_barra, FIG / "patim_original_x_novo.png")
         fig_corte_presilha(FIG / "corte_presilha.png")
         print(f"Figuras em {FIG.relative_to(RAIZ)}/")
-    print(f"\nMaior interferencia: {pior:.3f} mm3")
+    print(f"\nParede da presilha na borda da base: entra {d['parede']:.3f} mm (aceita, como o barilla_clamp no EVA-RT)")
+    print(f"Maior interferencia fora essa: {pior:.3f} mm3")
 
 
 if __name__ == "__main__":
