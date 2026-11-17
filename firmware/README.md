@@ -14,7 +14,7 @@ O controle é o mesmo do seguidor. Saem os sensores de marca e a contagem de par
 Regulamento técnico do Perseguidor de Linha do TRIF 2026 (`referencias/TRIF 2026 - Perseguidor de Linha.pdf`): anexa na íntegra as regras da RoboCore de 12/12/2023 (conferido palavra por palavra com a cópia usada aqui), na classe Pro, e exige partida e parada sem contato físico "conforme as especificações e alternativas previstas no regulamento". O que pesa no firmware:
 - **3.1.1 e 6.4:** o robô liga e para pelo módulo de partida do juiz, sem contato e **sem tempo de segurança**.
 - **6.5:** robô que não para com o comando de parada é **eliminado**.
-- **8.2.3:** vale receptor IR próprio, desde que siga o padrão dos módulos recomendados (JSumo MicroStart, Já-Bots).
+- **8.2.3:** vale receptor IR próprio, desde que siga o padrão de um dos módulos recomendados (JSumo MicroStart, Já-Bots).
 - **4.8–4.10:** não há marcas de curva nem cruzamentos; as únicas faixas atravessadas são as duas linhas de partida (200 mm, em reta, com 250 mm de reta antes e depois).
 - **6.3:** partida de 2 min; o juiz pode estender.
 
@@ -37,7 +37,11 @@ IDE do Arduino → abrir `perseguidor/perseguidor.ino` → placa "Arduino Nano" 
 - **Rounds:** depois do comando de parada o robô volta sozinho para "pronto", com a mesma calibração e o mesmo nível: os rounds seguidos não precisam de botão (regra 6.13, sem manutenção entre rounds).
 
 ## Módulo de início (IR)
-O KY-022 (J6, no A5) só demodula o infravermelho; quem decodifica é o firmware (`ir.*`), por interrupção. Para a competição vale o padrão do startmodule.com, que é o dos módulos recomendados (protocolo RC5):
+O KY-022 (J6, no A5) só demodula o infravermelho; quem decodifica é o firmware (`ir.*`), por interrupção.
+
+**Qual padrão o juiz vai usar ainda está em aberto.** O firmware segue o do startmodule.com (o da RobotChallenge, protocolo RC5), conferido no código do módulo e do controle oficiais ([p1rse/robot-sumo-start-module](https://github.com/p1rse/robot-sumo-start-module)). Só que o regulamento cita o JSumo MicroStart e o Já-Bots, e o MicroStart, segundo a página do fabricante, usa controle **Sony** (protocolo SIRC), com as teclas de partida e parada aprendidas do controle do juiz. O do Já-Bots não foi conferido. Perguntar à organização qual módulo e qual controle o juiz usa; se for Sony, o firmware precisa decodificar SIRC e aprender as teclas (ainda não feito).
+
+Padrão startmodule.com (RC5):
 
 | Comando | RC5: endereço | RC5: comando | O que o robô faz |
 |---|---|---|---|
@@ -50,7 +54,8 @@ O KY-022 (J6, no A5) só demodula o infravermelho; quem decodifica é o firmware
 - Repetição do mesmo aperto (o controle repete o quadro a cada 114 ms) é ignorada.
 - `IR_PARADA_QUALQUER_ID` em `config.h`: 0 (padrão) para só com o número gravado, como o módulo de verdade; 1 para com a parada de qualquer arena (mais seguro contra a regra 6.5, mas o juiz de uma arena vizinha também para o robô).
 - O KY-022 é de 38 kHz e o RC5 usa 36 kHz: funciona, com um pouco menos de alcance.
-- **Conferir no briefing** qual controle o juiz usa. Se não for RC5 no padrão acima, o comando `ir` mostra o que chega e o mapeamento muda no `config.h`.
+- O controle oficial do startmodule.com não manda arena 0 nem 1 em competição (0 é o "modo casa"); o módulo de verdade, apagado, começa na arena 4 (parada = comando 4). Como o juiz programa antes, isso não muda nada aqui.
+- **Conferir com a organização** qual controle o juiz usa (ver acima). O comando `ir` mostra o que chega (RC5 e NEC).
 
 ### Testar com o controle que vem com o KY-022
 Esse controle usa outro protocolo (NEC) e não manda os comandos do juiz. O firmware também decodifica NEC e, para os testes, **vem com ele ligado de fábrica** (`nec=1`): basta gravar e usar. O RC5 do juiz funciona junto.
@@ -146,7 +151,7 @@ No circuito, a velocidade de reta (`reta=10`) baixa o tempo de 3 voltas em 7 a 1
 
 ## Pendências
 - Tudo acima precisa ser confirmado no robô: mapa do mux, sentido das rodas, lado da barra, IR, ganhos, freio.
-- O protocolo do controle do juiz (RC5 no padrão startmodule.com) vem do regulamento; não foi testado com um módulo de verdade.
+- O controle do juiz: o firmware lê RC5 no padrão startmodule.com (códigos conferidos no código oficial), mas o JSumo MicroStart, citado no regulamento, usa Sony com teclas aprendidas. Confirmar com a organização. Nada foi testado com um módulo ou controle de verdade.
 - A barra fica ~107 mm à frente do eixo. Em curva de R100 ela fica quase paralela à linha e vê uma faixa larga; o firmware trata isso, mas a leitura da posição perde resolução ali. Com a barra mais perto do eixo o efeito diminui (é só deslizar o patim na vareta).
 - PWM dos motores em 976 Hz, como no EVA-RT e no seguidor.
 - Partida por Bluetooth (regra 8.3, só se não der para usar o IR): não implementada.

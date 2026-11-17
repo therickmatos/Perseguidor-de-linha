@@ -95,14 +95,18 @@
 // ------------------------------------------------------------------ modulo de inicio (IR)
 // Regra 3.1.1 e 6.4 do Perseguidor (RoboCore, 12/12/2023): o robo liga e
 // para pelo modulo de partida do juiz, sem tempo de seguranca. Item 8.2.3:
-// vale um receptor IR proprio que siga o padrao dos modulos recomendados
-// (JSumo MicroStart, Ja-Bots), que e o do startmodule.com: RC5, com
-//   programar: endereco 0x0B, comando = numero da arena ("dohyo")
+// vale um receptor IR proprio que siga o padrao de um dos modulos
+// recomendados (JSumo MicroStart, Ja-Bots).
+// ATENCAO: aqui esta o padrao do startmodule.com (RobotChallenge), conferido
+// no codigo do modulo e do controle oficiais (github.com/p1rse/
+// robot-sumo-start-module): RC5, com
+//   programar: endereco 0x0B, comando = numero da arena ("dohyo" x 2, par)
 //   partida:   endereco 0x07, comando = numero da arena + 1
 //   parada:    endereco 0x07, comando = numero da arena
-// O numero e par e fica gravado na EEPROM, como no modulo de verdade.
-// CONFERIR no briefing qual controle o juiz usa (comando 'ir' do console
-// mostra o endereco e o comando de cada quadro recebido).
+// Mas o JSumo MicroStart, segundo a pagina do fabricante, usa controle Sony
+// (SIRC) com as teclas aprendidas, e o padrao do Ja-Bots nao foi conferido.
+// PERGUNTAR a organizacao qual controle o juiz usa (comando 'ir' do console
+// mostra o que chega; Sony ainda nao e decodificado).
 #define IR_END_PROGRAMA    0x0B
 #define IR_END_PARTIDA     0x07
 // 1 = para com o comando de parada de qualquer arena (mais seguro contra a
