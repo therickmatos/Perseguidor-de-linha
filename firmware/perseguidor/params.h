@@ -91,8 +91,10 @@ inline void parametrosPadrao(Parametros &p) {
   p.tfreio = 75;
 
   // 0x45 e 0x46 sao as duas primeiras teclas da linha de cima nos dois
-  // controles comuns do kit: "1" e "2" no de 17 teclas, "CH-" e "CH" no de 21
-  p.nec = 0;
+  // controles comuns do kit: "1" e "2" no de 17 teclas, "CH-" e "CH" no de 21.
+  // Ligado de fabrica para os testes com o controle do kit (pedido do Erick,
+  // 17/11/2026). ANTES DE COMPETIR: nec=0 e salvar (ou trocar aqui para 0).
+  p.nec = 1;
   p.necend = 0x00;
   p.necpart = 0x45;
   p.necpara = 0x46;

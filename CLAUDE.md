@@ -27,7 +27,7 @@ Perseguidor **RUSH - Dreamcast**. É a placa irmã do seguidor RUSH - SATURN (re
 ## Firmware (17/11/2026)
 - Mesmo controle do seguidor (EVA-RT 1.2.2, mesmo mapa de pinos, conferido na netlist do `.epro`); sem sensores de marca; A5 = receptor IR por interrupção (PCINT13), A6 sem uso.
 - Módulo de início no padrão do startmodule.com (RC5: programar 0x0B, partida/parada 0x07, comando = arena + 1 / arena). Não testado com módulo de verdade: conferir no briefing.
-- O controle do Erick é o NEC do kit do KY-022: decodificado também, mas só vale com `nec=1` no console (teste). Desligar antes de competir.
+- O controle do Erick é o NEC do kit do KY-022: decodificado também e **ligado de fábrica** (`p.nec = 1` em `params.h`, a pedido dele, para os testes). Lembrar o Erick de desligar (`nec=0`, `salvar`) antes de competir.
 - Escrito e conferido só por simulação e compilação com `avr-gcc`; **ainda não rodou no robô**.
 - `linha.cpp`, `corrida.cpp` e `ir.cpp` não dependem do Arduino e são os mesmos no robô e nos testes: depois de mexer neles, rodar `sim` e `teste_ir` (os dois têm de terminar com "tudo certo").
 - O ciclo de controle é de 1 ms e o ATmega gasta ~0,6 ms nele (simavr): nada de `float` nem divisão de 32 bits dentro de `Corrida::passo()`.

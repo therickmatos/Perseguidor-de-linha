@@ -110,9 +110,10 @@
 // 0 = so com o numero gravado, como os modulos do padrao.
 #define IR_PARADA_QUALQUER_ID  0
 //
-// Para testar na bancada com o controle NEC que vem com o KY-022: console
-// 'nec=1' (teclas em 'necpart' e 'necpara', ver params.h). Desligar antes de
-// competir: outro controle igual por perto tambem largaria e pararia o robo.
+// O controle NEC que vem com o KY-022 tambem larga e para o robo: vem ligado
+// de fabrica, para os testes (teclas em 'necpart' e 'necpara', ver params.h).
+// Desligar antes de competir (console 'nec=0' e 'salvar'): outro controle
+// igual por perto tambem largaria e pararia o robo.
 
 // ------------------------------------------------------------------ motores
 // Motor A = esquerdo, motor B = direito. Se uma roda girar para tras no

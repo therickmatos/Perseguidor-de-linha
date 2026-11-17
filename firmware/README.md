@@ -53,23 +53,25 @@ O KY-022 (J6, no A5) só demodula o infravermelho; quem decodifica é o firmware
 - **Conferir no briefing** qual controle o juiz usa. Se não for RC5 no padrão acima, o comando `ir` mostra o que chega e o mapeamento muda no `config.h`.
 
 ### Testar com o controle que vem com o KY-022
-Esse controle usa outro protocolo (NEC) e não manda os comandos do juiz. O firmware também decodifica NEC, mas só aceita quando ligado no console:
-
-```
-nec=1
-salvar
-```
+Esse controle usa outro protocolo (NEC) e não manda os comandos do juiz. O firmware também decodifica NEC e, para os testes, **vem com ele ligado de fábrica** (`nec=1`): basta gravar e usar. O RC5 do juiz funciona junto.
 
 - Partida e parada ficam nas **duas primeiras teclas da linha de cima**: "1" e "2" no controle de 17 teclas (setas e OK), "CH−" e "CH" no de 21 teclas (o "Car MP3"). Os dois mandam endereço 0 e comandos 0x45 (69) e 0x46 (70).
 - Se for outro controle ou outra tecla: `ir`, apertar a tecla, ver o `NEC end` e o `cmd`, e acertar `necend`, `necpart` e `necpara`.
-- Ligado, o `?` e a tela de "pronto" avisam. **Desligar antes de competir** (`nec=0`, `salvar`): o mesmo controle é comum, e o de outra equipe por perto largaria ou pararia o robô.
+- Ligado, o `?` e a tela de "pronto" avisam. **Desligar antes de competir:**
+
+  ```
+  nec=0
+  salvar
+  ```
+
+  O mesmo controle é comum, e o de outra equipe por perto largaria ou pararia o robô. O `padrao` volta a ligar o NEC; para mudar o padrão, `p.nec` em `params.h`.
 - Repetição de tecla segurada é ignorada. Programar a arena só pelo RC5.
 
 ## Conferir na bancada, nesta ordem
 1. **Canais da barra:** console `r`. Passando a mão, devem variar 12 dos 16 canais; conferir com o `MAPA_MUX` do `config.h` (o teste de bancada da barra usou 4–15, o Gerber da V1 indica 2–13; mesma pendência do seguidor).
 2. **Rodas:** ligar com um botão apertado, botão 1. A sequência é esquerda para a frente, esquerda para trás, direita para a frente, direita para trás (LED A = esquerda, LED B = direita, LED C = para trás). Se não bater, mudar `INVERTER_MOTOR_*` / `TROCAR_MOTORES` no `config.h` ou inverter os fios.
 3. **Lado da barra:** calibrar e usar o console `s`. Com a linha sob a ponta **esquerda** do robô, quem acende é a primeira coluna e o erro é **negativo**; em "pronto" acende só o LED A. Se estiver ao contrário, `BARRA_ESPELHADA 1`.
-4. **IR:** console `ir` e apertar os botões do controle. Cada quadro aparece com o protocolo (RC5 ou NEC), endereço, comando e o que significa. Com o controle do kit: `nec=1` (seção acima). Para testar o RC5 do juiz sem o módulo: controle remoto Philips, outro Arduino com a biblioteca IRremote mandando RC5, ou o controle do JSumo/Já-Bots.
+4. **IR:** console `ir` e apertar os botões do controle. Cada quadro aparece com o protocolo (RC5 ou NEC), endereço, comando e o que significa. Com o controle do kit devem aparecer `NEC end 0 cmd 69 = PARTIDA` e `cmd 70 = PARADA` (seção acima). Para testar o RC5 do juiz sem o módulo: controle remoto Philips, outro Arduino com a biblioteca IRremote mandando RC5, ou o controle do JSumo/Já-Bots.
 5. **Parada:** em "pronto", com o robô suspenso (rodas no ar), mandar partida e parada pelo controle. Depois, no chão.
 6. **Bateria:** console `?` mostra a tensão. Ajustar `batcal` até bater com o multímetro (`batcal` novo = `batcal` × tensão real / tensão mostrada).
 7. Primeira partida no nível 0, com a mão perto do robô.
@@ -93,7 +95,7 @@ salvar
 | `perdido` | 100 | ms sem ver a linha até desligar (EVA-RT: 10) |
 | `tmax` | 180 | s até desligar sozinho (0 = sem limite). A partida tem 2 min mais o acréscimo do juiz |
 | `freio`, `tfreio` | 100 / 75 | ré no comando de parada: % do PWM em que vinha, por `tfreio` ms (EVA-RT: −SPEED por 75 ms) |
-| `nec`, `necend`, `necpart`, `necpara` | 0 / 0 / 69 / 70 | controle NEC do kit, só para teste: liga, endereço, tecla de partida, tecla de parada |
+| `nec`, `necend`, `necpart`, `necpara` | **1** / 0 / 69 / 70 | controle NEC do kit, para teste: liga (ligado de fábrica; `nec=0` antes de competir), endereço, tecla de partida, tecla de parada |
 | `comp`, `vref`, `batcal`, `batmin` | 1 / 7600 / 588 / 7000 | compensação do PWM pela bateria; tensão de referência (mV); ajuste do divisor; aviso de bateria baixa |
 
 Saíram em relação ao seguidor: `cruz`, `nmarcas`, `tminvolta` (eram dos sensores de marca).
@@ -119,7 +121,7 @@ O resumo também conta as linhas de partida que a barra cruzou: são 2 por volta
 | faixa atravessada = cruzamento, descartada nas marcas | faixa atravessada = linha de partida, só segura o erro | regra 4.8 |
 | `tmax` 120 s | 180 s | partida de 2 min + acréscimo |
 | EEPROM: parâmetros e calibração | + número da arena; magias diferentes das do seguidor | módulo de início |
-| — | controle NEC do kit do KY-022 opcional (`nec=1`) | testar na bancada |
+| — | controle NEC do kit do KY-022, ligado de fábrica (`nec=0` antes de competir) | testar na bancada |
 
 Igual ao seguidor: ciclo fixo de 1 ms em ponto fixo, posição pelo grupo de sensores em cima da linha, velocidade de reta e de curva com freada na entrada de curva, roda que satura tira das duas, compensação pela bateria, linha perdida continua virando para o lado em que saiu, console e EEPROM, mapa de pinos do EVA-RT (conferido na netlist do `.epro` do Dreamcast v4).
 
