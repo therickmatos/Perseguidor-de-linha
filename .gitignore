@@ -3,3 +3,6 @@ __pycache__/
 .DS_Store
 Thumbs.db
 desktop.ini
+# testes do firmware compilados
+firmware/testes/sim
+firmware/testes/teste_ir
