@@ -26,7 +26,7 @@ Perseguidor **RUSH - Dreamcast**. É a placa irmã do seguidor RUSH - SATURN (re
 
 ## Firmware (17/11/2026)
 - Mesmo controle do seguidor (EVA-RT 1.2.2, mesmo mapa de pinos, conferido na netlist do `.epro`); sem sensores de marca; A5 = receptor IR por interrupção (PCINT13), A6 sem uso.
-- **Controle:** no TRIF o controle fica com o participante e o NEC do kit do KY-022 foi aceito em 2024 e 2025 (Erick, 17/11/2026). O edital não cita protocolo. O NEC é o principal e vem ligado de fábrica (`p.nec = 1`, teclas 0x45/0x46, ajustáveis no console). Risco: controle igual de outra equipe com as mesmas teclas.
+- **Controle:** no TRIF o controle fica com o participante e o NEC do kit do KY-022 foi aceito em 2024 e 2025 (Erick, 17/11/2026). O edital não cita protocolo. O NEC é o principal e vem ligado de fábrica (`p.nec = 1`, teclas 0x45/0x46, ajustáveis no console). Risco: no TRIF 2024/25 a maioria das equipes usava esse mesmo controle (endereço 0); recomendado ao Erick usar outro controle NEC com outro endereço (só configurar `necend`/`necpart`/`necpara`), ou teclas menos óbvias.
 - Também lê RC5 no padrão do startmodule.com (programar 0x0B, partida/parada 0x07, comando = arena + 1 / arena), conferido no código oficial (github.com/p1rse/robot-sumo-start-module). Sony (JSumo MicroStart) não é decodificado.
 - Escrito e conferido só por simulação e compilação com `avr-gcc`; **ainda não rodou no robô**.
 - `linha.cpp`, `corrida.cpp` e `ir.cpp` não dependem do Arduino e são os mesmos no robô e nos testes: depois de mexer neles, rodar `sim` e `teste_ir` (os dois têm de terminar com "tudo certo").

@@ -65,7 +65,10 @@ Vem ligado de fábrica (`nec=1`): basta gravar e usar.
 - Partida e parada ficam nas **duas primeiras teclas da linha de cima**: "1" e "2" no controle de 17 teclas (setas e OK), "CH−" e "CH" no de 21 teclas (o "Car MP3"). Os dois mandam endereço 0 e comandos 0x45 (69) e 0x46 (70).
 - Se for outro controle ou outra tecla: `ir`, apertar a tecla, ver o `NEC end` e o `cmd`, e acertar `necend`, `necpart` e `necpara`.
 - O `?` e a tela de "pronto" mostram o endereço e as teclas em uso.
-- **Cuidado com controles iguais:** esse controle é comum, e o de outra equipe (inclusive a adversária, que também segura o próprio controle) com as mesmas teclas largaria ou pararia o robô. Para diminuir o risco, usar teclas menos óbvias: `ir`, apertar a tecla escolhida, e acertar `necpart`/`necpara` com o `cmd` mostrado, depois `salvar`.
+- **Cuidado com controles iguais:** no TRIF 2024/25 a maioria das equipes usava esse mesmo controle, e todos mandam endereço 0. O de outra equipe (inclusive a adversária, que segura o próprio controle) largaria ou pararia o robô se apertar uma das teclas escolhidas. Do mais seguro para o menos:
+  1. **Outro controle NEC, com outro endereço** (de TV, DVD, som; LG, por exemplo, usa NEC com endereço 4). Nenhum controle do kit interfere, porque o endereço não bate. `ir`, apertar as teclas, e acertar `necend`, `necpart` e `necpara`, depois `salvar`.
+  2. **Teclas menos óbvias no controle do kit** (não "1"/"2" nem "CH−"/"CH"): protege de quem usa as teclas comuns, mas não de quem aperta qualquer tecla. Mesmo procedimento, sem mudar `necend`.
+- Partida e parada da adversária no mesmo instante que as suas (quando o juiz manda) não atrapalham; o risco são apertos fora de hora e equipes testando perto da pista.
 - Para desligar o NEC: `nec=0` e `salvar` (o `padrao` volta a ligar).
 - Repetição de tecla segurada é ignorada. Programar a arena só pelo RC5.
 
