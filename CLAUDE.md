@@ -26,8 +26,8 @@ Perseguidor **RUSH - Dreamcast**. É a placa irmã do seguidor RUSH - SATURN (re
 
 ## Firmware (17/11/2026)
 - Mesmo controle do seguidor (EVA-RT 1.2.2, mesmo mapa de pinos, conferido na netlist do `.epro`); sem sensores de marca; A5 = receptor IR por interrupção (PCINT13), A6 sem uso.
-- Módulo de início no padrão do startmodule.com (RC5: programar 0x0B, partida/parada 0x07, comando = arena + 1 / arena), conferido no código oficial (github.com/p1rse/robot-sumo-start-module). **Em aberto:** o JSumo MicroStart, citado no regulamento (8.2.1), usa controle Sony (SIRC) com teclas aprendidas; o Já-Bots não foi conferido. O Erick precisa perguntar à organização qual controle o juiz usa.
-- O controle do Erick é o NEC do kit do KY-022: decodificado também e **ligado de fábrica** (`p.nec = 1` em `params.h`, a pedido dele, para os testes). Lembrar o Erick de desligar (`nec=0`, `salvar`) antes de competir.
+- **Controle:** no TRIF o controle fica com o participante e o NEC do kit do KY-022 foi aceito em 2024 e 2025 (Erick, 17/11/2026). O edital não cita protocolo. O NEC é o principal e vem ligado de fábrica (`p.nec = 1`, teclas 0x45/0x46, ajustáveis no console). Risco: controle igual de outra equipe com as mesmas teclas.
+- Também lê RC5 no padrão do startmodule.com (programar 0x0B, partida/parada 0x07, comando = arena + 1 / arena), conferido no código oficial (github.com/p1rse/robot-sumo-start-module). Sony (JSumo MicroStart) não é decodificado.
 - Escrito e conferido só por simulação e compilação com `avr-gcc`; **ainda não rodou no robô**.
 - `linha.cpp`, `corrida.cpp` e `ir.cpp` não dependem do Arduino e são os mesmos no robô e nos testes: depois de mexer neles, rodar `sim` e `teste_ir` (os dois têm de terminar com "tudo certo").
 - O ciclo de controle é de 1 ms e o ATmega gasta ~0,6 ms nele (simavr): nada de `float` nem divisão de 32 bits dentro de `Corrida::passo()`.

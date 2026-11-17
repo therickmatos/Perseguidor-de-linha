@@ -12,7 +12,7 @@ O controle é o mesmo do seguidor. Saem os sensores de marca e a contagem de par
 
 ## Regulamento usado
 Regulamento técnico do Perseguidor de Linha do TRIF 2026 (`referencias/TRIF 2026 - Perseguidor de Linha.pdf`): anexa na íntegra as regras da RoboCore de 12/12/2023 (conferido palavra por palavra com a cópia usada aqui), na classe Pro, e exige partida e parada sem contato físico "conforme as especificações e alternativas previstas no regulamento". O que pesa no firmware:
-- **3.1.1 e 6.4:** o robô liga e para pelo módulo de partida do juiz, sem contato e **sem tempo de segurança**.
+- **3.1.1 e 6.4:** o robô liga e para pelo módulo de partida, sem contato e **sem tempo de segurança**. O edital não diz quem aciona nem qual protocolo; no TRIF o controle fica com o participante.
 - **6.5:** robô que não para com o comando de parada é **eliminado**.
 - **8.2.3:** vale receptor IR próprio, desde que siga o padrão de um dos módulos recomendados (JSumo MicroStart, Já-Bots).
 - **4.8–4.10:** não há marcas de curva nem cruzamentos; as únicas faixas atravessadas são as duas linhas de partida (200 mm, em reta, com 250 mm de reta antes e depois).
@@ -22,7 +22,7 @@ Regulamento técnico do Perseguidor de Linha do TRIF 2026 (`referencias/TRIF 202
 IDE do Arduino → abrir `perseguidor/perseguidor.ino` → placa "Arduino Nano" (ATmega328P; "Old Bootloader" se o chip veio de um Nano antigo) ou "Arduino Uno", conforme o chip doador → gravar pelo J3 (5 pads embaixo). Serial e Bluetooth em 115200. Ocupa 20,8 kB de flash e 1015 B de RAM.
 
 ## Uso
-| Situação | LEDs | Controle do juiz | Botão 1 | Botão 2 |
+| Situação | LEDs | Controle IR | Botão 1 | Botão 2 |
 |---|---|---|---|---|
 | Ligar com um botão apertado | piscam 2× | — | teste das rodas | liga/desliga a ventoinha |
 | Esperando | C pisca devagar | programar grava a arena | calibrar | usar a calibração gravada |
@@ -39,9 +39,11 @@ IDE do Arduino → abrir `perseguidor/perseguidor.ino` → placa "Arduino Nano" 
 ## Módulo de início (IR)
 O KY-022 (J6, no A5) só demodula o infravermelho; quem decodifica é o firmware (`ir.*`), por interrupção.
 
-**Qual padrão o juiz vai usar ainda está em aberto.** O firmware segue o do startmodule.com (o da RobotChallenge, protocolo RC5), conferido no código do módulo e do controle oficiais ([p1rse/robot-sumo-start-module](https://github.com/p1rse/robot-sumo-start-module)). Só que o regulamento cita o JSumo MicroStart e o Já-Bots, e o MicroStart, segundo a página do fabricante, usa controle **Sony** (protocolo SIRC), com as teclas de partida e parada aprendidas do controle do juiz. O do Já-Bots não foi conferido. Perguntar à organização qual módulo e qual controle o juiz usa; se for Sony, o firmware precisa decodificar SIRC e aprender as teclas (ainda não feito).
+**No TRIF o controle fica com o participante, e o controle NEC do kit do KY-022 foi aceito em 2024 e 2025** (informação do Erick; o edital não cita protocolo). Por isso o NEC é o controle principal e vem ligado de fábrica (seção abaixo).
 
-Padrão startmodule.com (RC5):
+O firmware também lê o padrão do startmodule.com (o da RobotChallenge, protocolo RC5), conferido no código do módulo e do controle oficiais ([p1rse/robot-sumo-start-module](https://github.com/p1rse/robot-sumo-start-module)), caso algum dia o controle seja de um juiz com esse módulo. Os dois funcionam ao mesmo tempo. O JSumo MicroStart, citado no regulamento, usa controle Sony (SIRC), que não é decodificado.
+
+### Padrão startmodule.com (RC5)
 
 | Comando | RC5: endereço | RC5: comando | O que o robô faz |
 |---|---|---|---|
@@ -55,28 +57,23 @@ Padrão startmodule.com (RC5):
 - `IR_PARADA_QUALQUER_ID` em `config.h`: 0 (padrão) para só com o número gravado, como o módulo de verdade; 1 para com a parada de qualquer arena (mais seguro contra a regra 6.5, mas o juiz de uma arena vizinha também para o robô).
 - O KY-022 é de 38 kHz e o RC5 usa 36 kHz: funciona, com um pouco menos de alcance.
 - O controle oficial do startmodule.com não manda arena 0 nem 1 em competição (0 é o "modo casa"); o módulo de verdade, apagado, começa na arena 4 (parada = comando 4). Como o juiz programa antes, isso não muda nada aqui.
-- **Conferir com a organização** qual controle o juiz usa (ver acima). O comando `ir` mostra o que chega (RC5 e NEC).
+- O comando `ir` mostra o que chega (RC5 e NEC).
 
-### Testar com o controle que vem com o KY-022
-Esse controle usa outro protocolo (NEC) e não manda os comandos do juiz. O firmware também decodifica NEC e, para os testes, **vem com ele ligado de fábrica** (`nec=1`): basta gravar e usar. O RC5 do juiz funciona junto.
+### Controle NEC (o do kit do KY-022)
+Vem ligado de fábrica (`nec=1`): basta gravar e usar.
 
 - Partida e parada ficam nas **duas primeiras teclas da linha de cima**: "1" e "2" no controle de 17 teclas (setas e OK), "CH−" e "CH" no de 21 teclas (o "Car MP3"). Os dois mandam endereço 0 e comandos 0x45 (69) e 0x46 (70).
 - Se for outro controle ou outra tecla: `ir`, apertar a tecla, ver o `NEC end` e o `cmd`, e acertar `necend`, `necpart` e `necpara`.
-- Ligado, o `?` e a tela de "pronto" avisam. **Desligar antes de competir:**
-
-  ```
-  nec=0
-  salvar
-  ```
-
-  O mesmo controle é comum, e o de outra equipe por perto largaria ou pararia o robô. O `padrao` volta a ligar o NEC; para mudar o padrão, `p.nec` em `params.h`.
+- O `?` e a tela de "pronto" mostram o endereço e as teclas em uso.
+- **Cuidado com controles iguais:** esse controle é comum, e o de outra equipe (inclusive a adversária, que também segura o próprio controle) com as mesmas teclas largaria ou pararia o robô. Para diminuir o risco, usar teclas menos óbvias: `ir`, apertar a tecla escolhida, e acertar `necpart`/`necpara` com o `cmd` mostrado, depois `salvar`.
+- Para desligar o NEC: `nec=0` e `salvar` (o `padrao` volta a ligar).
 - Repetição de tecla segurada é ignorada. Programar a arena só pelo RC5.
 
 ## Conferir na bancada, nesta ordem
 1. **Canais da barra:** console `r`. Passando a mão, devem variar 12 dos 16 canais; conferir com o `MAPA_MUX` do `config.h` (o teste de bancada da barra usou 4–15, o Gerber da V1 indica 2–13; mesma pendência do seguidor).
 2. **Rodas:** ligar com um botão apertado, botão 1. A sequência é esquerda para a frente, esquerda para trás, direita para a frente, direita para trás (LED A = esquerda, LED B = direita, LED C = para trás). Se não bater, mudar `INVERTER_MOTOR_*` / `TROCAR_MOTORES` no `config.h` ou inverter os fios.
 3. **Lado da barra:** calibrar e usar o console `s`. Com a linha sob a ponta **esquerda** do robô, quem acende é a primeira coluna e o erro é **negativo**; em "pronto" acende só o LED A. Se estiver ao contrário, `BARRA_ESPELHADA 1`.
-4. **IR:** console `ir` e apertar os botões do controle. Cada quadro aparece com o protocolo (RC5 ou NEC), endereço, comando e o que significa. Com o controle do kit devem aparecer `NEC end 0 cmd 69 = PARTIDA` e `cmd 70 = PARADA` (seção acima). Para testar o RC5 do juiz sem o módulo: controle remoto Philips, outro Arduino com a biblioteca IRremote mandando RC5, ou o controle do JSumo/Já-Bots.
+4. **IR:** console `ir` e apertar os botões do controle. Cada quadro aparece com o protocolo (RC5 ou NEC), endereço, comando e o que significa. Com o controle do kit devem aparecer `NEC end 0 cmd 69 = PARTIDA` e `cmd 70 = PARADA` (seção acima).
 5. **Parada:** em "pronto", com o robô suspenso (rodas no ar), mandar partida e parada pelo controle. Depois, no chão.
 6. **Bateria:** console `?` mostra a tensão. Ajustar `batcal` até bater com o multímetro (`batcal` novo = `batcal` × tensão real / tensão mostrada).
 7. Primeira partida no nível 0, com a mão perto do robô.
@@ -100,7 +97,7 @@ Esse controle usa outro protocolo (NEC) e não manda os comandos do juiz. O firm
 | `perdido` | 100 | ms sem ver a linha até desligar (EVA-RT: 10) |
 | `tmax` | 180 | s até desligar sozinho (0 = sem limite). A partida tem 2 min mais o acréscimo do juiz |
 | `freio`, `tfreio` | 100 / 75 | ré no comando de parada: % do PWM em que vinha, por `tfreio` ms (EVA-RT: −SPEED por 75 ms) |
-| `nec`, `necend`, `necpart`, `necpara` | **1** / 0 / 69 / 70 | controle NEC do kit, para teste: liga (ligado de fábrica; `nec=0` antes de competir), endereço, tecla de partida, tecla de parada |
+| `nec`, `necend`, `necpart`, `necpara` | 1 / 0 / 69 / 70 | controle NEC do kit (o usado no TRIF): liga, endereço, tecla de partida, tecla de parada |
 | `comp`, `vref`, `batcal`, `batmin` | 1 / 7600 / 588 / 7000 | compensação do PWM pela bateria; tensão de referência (mV); ajuste do divisor; aviso de bateria baixa |
 
 Saíram em relação ao seguidor: `cruz`, `nmarcas`, `tminvolta` (eram dos sensores de marca).
@@ -121,12 +118,12 @@ O resumo também conta as linhas de partida que a barra cruzou: são 2 por volta
 | larga pelo botão 1, sai em 1 s | larga pelo controle, sai na hora (o botão ficou só para teste) | regra 3.1.1 |
 | para na 2ª marca da direita (partida, chegada) | para pelo comando de parada do controle (com a mesma ré curta) | não há marcas; regra 6.4 |
 | ventoinha sobe em 400 ms antes de sair | rodas e ventoinha saem juntas; ventoinha em 200 ms | sem tempo de segurança |
-| fim: espera um botão | parada pelo juiz: volta sozinho para "pronto" | rounds seguidos sem tocar no robô |
+| fim: espera um botão | comando de parada: volta sozinho para "pronto" | rounds seguidos sem tocar no robô |
 | LEDs A/B = sensores de marca | LEDs A/B = lado da linha na barra | ajuda a posicionar o robô |
 | faixa atravessada = cruzamento, descartada nas marcas | faixa atravessada = linha de partida, só segura o erro | regra 4.8 |
 | `tmax` 120 s | 180 s | partida de 2 min + acréscimo |
 | EEPROM: parâmetros e calibração | + número da arena; magias diferentes das do seguidor | módulo de início |
-| — | controle NEC do kit do KY-022, ligado de fábrica (`nec=0` antes de competir) | testar na bancada |
+| — | controle NEC do kit do KY-022, ligado de fábrica | é o controle aceito no TRIF (2024 e 2025) |
 
 Igual ao seguidor: ciclo fixo de 1 ms em ponto fixo, posição pelo grupo de sensores em cima da linha, velocidade de reta e de curva com freada na entrada de curva, roda que satura tira das duas, compensação pela bateria, linha perdida continua virando para o lado em que saiu, console e EEPROM, mapa de pinos do EVA-RT (conferido na netlist do `.epro` do Dreamcast v4).
 
@@ -139,7 +136,7 @@ g++ -O2 -std=c++11 -I../perseguidor teste_ir.cpp ../perseguidor/ir.cpp -o teste_
 Os dois terminam com "tudo certo" ou listam o que falhou.
 
 **`sim.cpp`** roda `linha.cpp` e `corrida.cpp` (os mesmos arquivos do robô) com um robô simulado: barra em arco a 107,1 mm do eixo (63,14 mm entre furos, como na `mecânica/`). Pistas:
-- ensaio aberto: largada pelo controle e pelo botão, parada pelo juiz, curvas R100–R300, linha de partida reta e a 85°, níveis 4–12, largada torta, linha interrompida, ganho baixo, largada fora da linha, `tmax`, parada antes de sair;
+- ensaio aberto: largada pelo controle e pelo botão, comando de parada, curvas R100–R300, linha de partida reta e a 85°, níveis 4–12, largada torta, linha interrompida, ganho baixo, largada fora da linha, `tmax`, parada antes de sair;
 - circuito de perseguidor **inventado** dentro do regulamento (7,44 m, simétrico, 2 linhas de partida, cabe em 2,5 × 1,5 m): 3 voltas largando com a barra sobre a linha, 40 mm antes e 30 mm depois, e da outra linha de partida; três modelos de motor; níveis 4–12; sensores desiguais;
 - as pistas TRIF 2025 e 2024 do seguidor, sem as marcas, como teste mais difícil (cruzamentos de verdade e curvas de R100).
 
@@ -151,7 +148,7 @@ No circuito, a velocidade de reta (`reta=10`) baixa o tempo de 3 voltas em 7 a 1
 
 ## Pendências
 - Tudo acima precisa ser confirmado no robô: mapa do mux, sentido das rodas, lado da barra, IR, ganhos, freio.
-- O controle do juiz: o firmware lê RC5 no padrão startmodule.com (códigos conferidos no código oficial), mas o JSumo MicroStart, citado no regulamento, usa Sony com teclas aprendidas. Confirmar com a organização. Nada foi testado com um módulo ou controle de verdade.
+- Controle: NEC do kit (aceito no TRIF 2024/25) e RC5 do startmodule.com. Nenhum dos dois foi testado com o robô ainda; conferir as teclas com o `ir`.
 - A barra fica ~107 mm à frente do eixo. Em curva de R100 ela fica quase paralela à linha e vê uma faixa larga; o firmware trata isso, mas a leitura da posição perde resolução ali. Com a barra mais perto do eixo o efeito diminui (é só deslizar o patim na vareta).
 - PWM dos motores em 976 Hz, como no EVA-RT e no seguidor.
 - Partida por Bluetooth (regra 8.3, só se não der para usar o IR): não implementada.

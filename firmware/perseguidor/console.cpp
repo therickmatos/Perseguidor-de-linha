@@ -184,7 +184,7 @@ void consoleArena() {
   Serial.print(F(" cmd "));
   Serial.println(arena);
   if (P.nec) {
-    Serial.print(F("ATENCAO: controle NEC ligado, so para teste (nec=0 antes de competir): end "));
+    Serial.print(F("controle NEC ligado: end "));
     Serial.print(P.necend);
     Serial.print(F(", partida cmd "));
     Serial.print(P.necpart);
@@ -360,7 +360,7 @@ static void fluxoIR() {
       case IR_PARADA:   Serial.println(F("  = PARADA")); break;
       case IR_PROGRAMA: Serial.println(F("  = PROGRAMAR (aqui nao grava; use fora do 'ir')")); break;
       default:
-        Serial.println(q.protocolo == IR_NEC && !P.nec ? F("  (NEC desligado: nec=1 para testar)")
+        Serial.println(q.protocolo == IR_NEC && !P.nec ? F("  (NEC desligado: nec=1 para usar)")
                                                        : F("  (outra arena ou outro aparelho)"));
         break;
     }

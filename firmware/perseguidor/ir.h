@@ -19,7 +19,7 @@
  * 4,5 ms sem; 32 bits, o menos significativo primeiro (endereco, endereco
  * invertido, comando, comando invertido), cada um com 562 us de portadora e
  * 562 us (0) ou 1687 us (1) sem. Botao segurado: codigo de repeticao (lider
- * de 9 ms + 2,25 ms), que aqui e ignorado. So para teste (ver config.h).
+ * de 9 ms + 2,25 ms), que aqui e ignorado. E o controle usado no TRIF (ver config.h).
  */
 #pragma once
 

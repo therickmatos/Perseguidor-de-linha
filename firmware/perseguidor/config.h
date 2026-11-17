@@ -105,8 +105,9 @@
 //   parada:    endereco 0x07, comando = numero da arena
 // Mas o JSumo MicroStart, segundo a pagina do fabricante, usa controle Sony
 // (SIRC) com as teclas aprendidas, e o padrao do Ja-Bots nao foi conferido.
-// PERGUNTAR a organizacao qual controle o juiz usa (comando 'ir' do console
-// mostra o que chega; Sony ainda nao e decodificado).
+// No TRIF o controle fica com o participante e o controle NEC do kit do
+// KY-022 foi aceito em 2024 e 2025 (Erick, 17/11/2026): o NEC e o principal
+// (ver abaixo); o RC5 continua valendo junto. Sony nao e decodificado.
 #define IR_END_PROGRAMA    0x0B
 #define IR_END_PARTIDA     0x07
 // 1 = para com o comando de parada de qualquer arena (mais seguro contra a
@@ -114,10 +115,10 @@
 // 0 = so com o numero gravado, como os modulos do padrao.
 #define IR_PARADA_QUALQUER_ID  0
 //
-// O controle NEC que vem com o KY-022 tambem larga e para o robo: vem ligado
-// de fabrica, para os testes (teclas em 'necpart' e 'necpara', ver params.h).
-// Desligar antes de competir (console 'nec=0' e 'salvar'): outro controle
-// igual por perto tambem largaria e pararia o robo.
+// O controle NEC que vem com o KY-022 larga e para o robo: vem ligado de
+// fabrica (teclas em 'necpart' e 'necpara', ver params.h). Outro controle
+// igual por perto, com as mesmas teclas, tambem largaria e pararia o robo:
+// trocar as teclas pelo console se isso for um risco.
 
 // ------------------------------------------------------------------ motores
 // Motor A = esquerdo, motor B = direito. Se uma roda girar para tras no

@@ -48,8 +48,9 @@ struct Parametros {
   uint16_t freio;     // re para frear, em % do PWM base do momento
   uint16_t tfreio;    // ms de re (voltou para tras: diminua; demorou a parar: aumente)
 
-  // ---- controle NEC (o do kit do KY-022), SO PARA TESTE: o juiz usa RC5.
-  //      Ligado, outro controle igual por perto tambem larga e para o robo.
+  // ---- controle NEC (o do kit do KY-022). No TRIF o controle fica com o
+  //      participante e o NEC foi aceito em 2024 e 2025. Outro controle igual
+  //      por perto, com as mesmas teclas, tambem larga e para o robo.
   uint8_t  nec;       // 1 = aceita o controle NEC
   uint16_t necend;    // endereco do controle (o comando 'ir' mostra)
   uint8_t  necpart;   // tecla de partida
@@ -92,8 +93,7 @@ inline void parametrosPadrao(Parametros &p) {
 
   // 0x45 e 0x46 sao as duas primeiras teclas da linha de cima nos dois
   // controles comuns do kit: "1" e "2" no de 17 teclas, "CH-" e "CH" no de 21.
-  // Ligado de fabrica para os testes com o controle do kit (pedido do Erick,
-  // 17/11/2026). ANTES DE COMPETIR: nec=0 e salvar (ou trocar aqui para 0).
+  // Ligado de fabrica: e o controle usado na competicao (Erick, 17/11/2026).
   p.nec = 1;
   p.necend = 0x00;
   p.necpart = 0x45;

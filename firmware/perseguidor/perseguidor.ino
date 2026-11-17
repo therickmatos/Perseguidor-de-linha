@@ -9,8 +9,8 @@
 
       DRIVERS:            2x DRV8874 (PH/EN)
       SENSORES:           barra V1 de 12 QRE1113 + 74HC4067
-      MODULO DE INICIO:   receptor IR KY-022 no A5, padrao startmodule.com (RC5);
-                          controle NEC do kit do KY-022 opcional, so para teste
+      MODULO DE INICIO:   receptor IR KY-022 no A5: controle NEC do kit do KY-022
+                          (o que vale no TRIF) e padrao startmodule.com (RC5)
       MICROCONTROLADOR:   ATmega328P-AU (mapa de pinos do EVA-RT 1.2.2)
       BATERIA:            2S
       CONTROLE:           PD, ciclo fixo de 1 ms
@@ -18,7 +18,7 @@
   Placa na IDE: "Arduino Nano" (ATmega328P) ou "Arduino Uno", conforme o
   bootloader do chip doador. Serial em 115200.
 
-  Uso (2 botoes, 3 LEDs, controle do juiz):
+  Uso (2 botoes, 3 LEDs, controle IR):
     ligar com um botao apertado   modo teste (botao 1 rodas, botao 2 ventoinha)
     LED C piscando devagar        botao 1 = calibrar | botao 2 = usar a calibracao gravada
     calibrando (LED C rapido)     passar a barra inteira pela linha; botao 1 termina
