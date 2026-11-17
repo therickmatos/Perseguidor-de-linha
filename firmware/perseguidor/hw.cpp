@@ -20,20 +20,26 @@ static const uint8_t MAPA[N_SENSORES] = MAPA_MUX;
 
 static uint16_t batFiltro;   // 8 x a leitura (media movel exponencial)
 
-static DecodificadorRC5   irDec;
-static volatile QuadroRC5 irQuadro;
-static volatile bool      irNovo;
+static DecodificadorRC5  irRC5;
+static DecodificadorNEC  irNEC;
+static volatile QuadroIR irQuadro;
+static volatile bool     irNovo;
 
-// Uma borda no A5. Curta (~10 us): o ciclo de controle nem sente.
+static void irGuardar(const QuadroIR &q) {
+  irQuadro.protocolo = q.protocolo;
+  irQuadro.endereco = q.endereco;
+  irQuadro.comando = q.comando;
+  irQuadro.toggle = q.toggle;
+  irNovo = true;
+}
+
+// Uma borda no A5 vai para os dois decodificadores. Curta (~25 us): no
+// maximo duas por ciclo de controle.
 ISR(PCINT1_vect) {
   const bool nivel = (PINC & _BV(PC5)) != 0;
-  if (irDec.borda(micros(), nivel)) {
-    const QuadroRC5 &q = irDec.quadro();
-    irQuadro.endereco = q.endereco;
-    irQuadro.comando = q.comando;
-    irQuadro.toggle = q.toggle;
-    irNovo = true;
-  }
+  const uint32_t t = micros();
+  if (irRC5.borda(t, nivel)) irGuardar(irRC5.quadro());
+  if (irNEC.borda(t, nivel)) irGuardar(irNEC.quadro());
 }
 
 static inline uint8_t converter() {
@@ -76,7 +82,8 @@ void hwIniciar() {
 
   batFiltro = (uint16_t)lerEntrada(ADC_BATERIA) * 8;
 
-  irDec.reiniciar();
+  irRC5.reiniciar();
+  irNEC.reiniciar();
   irNovo = false;
   PCMSK1 = _BV(PCINT13);
   PCIFR = _BV(PCIF1);
@@ -125,11 +132,12 @@ uint8_t hwLerAdc(uint8_t adc) {
 
 // ---------------------------------------------------------------- IR
 
-bool hwIrQuadro(QuadroRC5 &q) {
+bool hwIrQuadro(QuadroIR &q) {
   bool novo;
   ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
     novo = irNovo;
     if (novo) {
+      q.protocolo = irQuadro.protocolo;
       q.endereco = irQuadro.endereco;
       q.comando = irQuadro.comando;
       q.toggle = irQuadro.toggle;

@@ -10,7 +10,7 @@
 #include "config.h"
 #include "linha.h"
 #include "params.h"
-#include "ir_rc5.h"
+#include "ir.h"
 
 void hwIniciar();
 
@@ -22,8 +22,8 @@ uint8_t hwLerCanalMux(uint8_t canal);    // um canal do 74HC4067 (diagnostico)
 uint8_t hwLerAdc(uint8_t adc);           // uma entrada do ATmega (diagnostico)
 
 // ---- receptor IR (A5, por interrupcao de mudanca de nivel)
-// true = chegou um quadro RC5 desde a ultima chamada (fica so o mais novo)
-bool hwIrQuadro(QuadroRC5 &q);
+// true = chegou um quadro (RC5 ou NEC) desde a ultima chamada (fica so o mais novo)
+bool hwIrQuadro(QuadroIR &q);
 bool hwIrNivel();                        // nivel atual do pino (true = sem portadora)
 
 // ---- bateria (A7, divisor 20k/10k)

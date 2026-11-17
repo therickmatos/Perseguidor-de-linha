@@ -19,7 +19,7 @@ Perseguidor **RUSH - Dreamcast**. É a placa irmã do seguidor RUSH - SATURN (re
 | `hardware/placa_base/` | `.epro` do v4 (encomendado), Gerber final, BOM |
 | `hardware/barra_v1/` | Gerber da barra V1 (a mesma do seguidor) |
 | `firmware/perseguidor/` | firmware (Arduino, ATmega328P), adaptado de `firmware/seguidor/` do repositório do seguidor |
-| `firmware/testes/` | `sim.cpp` (controle no PC) e `teste_ir.cpp` (decodificador RC5) |
+| `firmware/testes/` | `sim.cpp` (controle no PC) e `teste_ir.cpp` (decodificadores RC5 e NEC) |
 | `mecânica/` | STL, parafusos, montagem e conferência 3D |
 | `ferramentas/bom_epro.py` | BOM a partir do `.epro` |
 | `ferramentas/pecas_3d/` | gera `mecânica/stl/` e faz a conferência 3D (lê o `.epro` e o Gerber da V1) |
@@ -27,13 +27,15 @@ Perseguidor **RUSH - Dreamcast**. É a placa irmã do seguidor RUSH - SATURN (re
 ## Firmware (17/11/2026)
 - Mesmo controle do seguidor (EVA-RT 1.2.2, mesmo mapa de pinos, conferido na netlist do `.epro`); sem sensores de marca; A5 = receptor IR por interrupção (PCINT13), A6 sem uso.
 - Módulo de início no padrão do startmodule.com (RC5: programar 0x0B, partida/parada 0x07, comando = arena + 1 / arena). Não testado com módulo de verdade: conferir no briefing.
+- O controle do Erick é o NEC do kit do KY-022: decodificado também, mas só vale com `nec=1` no console (teste). Desligar antes de competir.
 - Escrito e conferido só por simulação e compilação com `avr-gcc`; **ainda não rodou no robô**.
-- `linha.cpp`, `corrida.cpp` e `ir_rc5.cpp` não dependem do Arduino e são os mesmos no robô e nos testes: depois de mexer neles, rodar `sim` e `teste_ir` (os dois têm de terminar com "tudo certo").
+- `linha.cpp`, `corrida.cpp` e `ir.cpp` não dependem do Arduino e são os mesmos no robô e nos testes: depois de mexer neles, rodar `sim` e `teste_ir` (os dois têm de terminar com "tudo certo").
 - O ciclo de controle é de 1 ms e o ATmega gasta ~0,6 ms nele (simavr): nada de `float` nem divisão de 32 bits dentro de `Corrida::passo()`.
 
 ## Mecânica (17/11/2026)
 - Base de **1,6 mm** (confirmado pelo Erick). Presilha nova sem o braço de baixo (`presilha_vareta_base1.6.stl`): com braço, a cabeça do parafuso ficaria abaixo da pista.
-- Patim, distância de 63,14 mm entre furos (L = 107,1 mm) e demais peças iguais às do seguidor. Espessura da V1 ainda por medir (há patim para 1,0 e 1,6 mm).
+- Barra V1 de **1,6 mm** (medida pelo Erick): patim do seguidor na versão para 1,6 mm. Distância de 63,14 mm entre furos (L = 107,1 mm) e demais peças iguais às do seguidor.
+- J3 (gravação, embaixo): barra de pinos reta deitada, parte preta encostada na borda de trás (y = −30), ~0,8 mm da pista.
 
 ## Formato .epro (para os scripts)
 - É um zip de linhas JSON, com coordenadas em mil (× 0,0254 = mm).

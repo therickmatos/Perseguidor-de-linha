@@ -6,7 +6,7 @@ O controle é o mesmo do seguidor. Saem os sensores de marca e a contagem de par
 | Pasta | Conteúdo |
 |---|---|
 | `perseguidor/` | firmware do robô (ATmega328P-AU, 16 MHz). Abrir `perseguidor.ino` na IDE do Arduino |
-| `testes/` | simulador do controle no PC (`sim.cpp`) e teste do decodificador IR (`teste_ir.cpp`) |
+| `testes/` | simulador do controle no PC (`sim.cpp`) e teste dos decodificadores IR (`teste_ir.cpp`) |
 
 **Estado: compila sem avisos e passa no simulador e no teste do IR; ainda não rodou no robô.** Os ganhos e o freio só se acertam na pista.
 
@@ -19,7 +19,7 @@ Perseguidor de Linha da RoboCore, revisão de 12/12/2023 (o TRIF usa as regras d
 - **6.3:** partida de 2 min; o juiz pode estender.
 
 ## Gravar
-IDE do Arduino → abrir `perseguidor/perseguidor.ino` → placa "Arduino Nano" (ATmega328P; "Old Bootloader" se o chip veio de um Nano antigo) ou "Arduino Uno", conforme o chip doador → gravar pelo J3 (5 pads embaixo). Serial e Bluetooth em 115200. Ocupa 19,5 kB de flash e 989 B de RAM.
+IDE do Arduino → abrir `perseguidor/perseguidor.ino` → placa "Arduino Nano" (ATmega328P; "Old Bootloader" se o chip veio de um Nano antigo) ou "Arduino Uno", conforme o chip doador → gravar pelo J3 (5 pads embaixo). Serial e Bluetooth em 115200. Ocupa 20,8 kB de flash e 1015 B de RAM.
 
 ## Uso
 | Situação | LEDs | Controle do juiz | Botão 1 | Botão 2 |
@@ -37,7 +37,7 @@ IDE do Arduino → abrir `perseguidor/perseguidor.ino` → placa "Arduino Nano" 
 - **Rounds:** depois do comando de parada o robô volta sozinho para "pronto", com a mesma calibração e o mesmo nível: os rounds seguidos não precisam de botão (regra 6.13, sem manutenção entre rounds).
 
 ## Módulo de início (IR)
-O KY-022 (J6, no A5) só demodula o infravermelho; quem decodifica é o firmware (`ir_rc5.*`), por interrupção. Ele segue o padrão do startmodule.com, que é o dos módulos recomendados:
+O KY-022 (J6, no A5) só demodula o infravermelho; quem decodifica é o firmware (`ir.*`), por interrupção. Para a competição vale o padrão do startmodule.com, que é o dos módulos recomendados (protocolo RC5):
 
 | Comando | RC5: endereço | RC5: comando | O que o robô faz |
 |---|---|---|---|
@@ -52,17 +52,30 @@ O KY-022 (J6, no A5) só demodula o infravermelho; quem decodifica é o firmware
 - O KY-022 é de 38 kHz e o RC5 usa 36 kHz: funciona, com um pouco menos de alcance.
 - **Conferir no briefing** qual controle o juiz usa. Se não for RC5 no padrão acima, o comando `ir` mostra o que chega e o mapeamento muda no `config.h`.
 
+### Testar com o controle que vem com o KY-022
+Esse controle usa outro protocolo (NEC) e não manda os comandos do juiz. O firmware também decodifica NEC, mas só aceita quando ligado no console:
+
+```
+nec=1
+salvar
+```
+
+- Partida e parada ficam nas **duas primeiras teclas da linha de cima**: "1" e "2" no controle de 17 teclas (setas e OK), "CH−" e "CH" no de 21 teclas (o "Car MP3"). Os dois mandam endereço 0 e comandos 0x45 (69) e 0x46 (70).
+- Se for outro controle ou outra tecla: `ir`, apertar a tecla, ver o `NEC end` e o `cmd`, e acertar `necend`, `necpart` e `necpara`.
+- Ligado, o `?` e a tela de "pronto" avisam. **Desligar antes de competir** (`nec=0`, `salvar`): o mesmo controle é comum, e o de outra equipe por perto largaria ou pararia o robô.
+- Repetição de tecla segurada é ignorada. Programar a arena só pelo RC5.
+
 ## Conferir na bancada, nesta ordem
 1. **Canais da barra:** console `r`. Passando a mão, devem variar 12 dos 16 canais; conferir com o `MAPA_MUX` do `config.h` (o teste de bancada da barra usou 4–15, o Gerber da V1 indica 2–13; mesma pendência do seguidor).
 2. **Rodas:** ligar com um botão apertado, botão 1. A sequência é esquerda para a frente, esquerda para trás, direita para a frente, direita para trás (LED A = esquerda, LED B = direita, LED C = para trás). Se não bater, mudar `INVERTER_MOTOR_*` / `TROCAR_MOTORES` no `config.h` ou inverter os fios.
 3. **Lado da barra:** calibrar e usar o console `s`. Com a linha sob a ponta **esquerda** do robô, quem acende é a primeira coluna e o erro é **negativo**; em "pronto" acende só o LED A. Se estiver ao contrário, `BARRA_ESPELHADA 1`.
-4. **IR:** console `ir` e apertar os botões do controle. Cada quadro aparece com endereço, comando e o que significa. Sem um controle RC5 o `ir` não mostra nada (o controle que vem com o KY-022 costuma ser NEC). Para testar sem o controle do juiz: controle remoto Philips (RC5), outro Arduino com a biblioteca IRremote mandando RC5, ou o controle do JSumo/Já-Bots.
+4. **IR:** console `ir` e apertar os botões do controle. Cada quadro aparece com o protocolo (RC5 ou NEC), endereço, comando e o que significa. Com o controle do kit: `nec=1` (seção acima). Para testar o RC5 do juiz sem o módulo: controle remoto Philips, outro Arduino com a biblioteca IRremote mandando RC5, ou o controle do JSumo/Já-Bots.
 5. **Parada:** em "pronto", com o robô suspenso (rodas no ar), mandar partida e parada pelo controle. Depois, no chão.
 6. **Bateria:** console `?` mostra a tensão. Ajustar `batcal` até bater com o multímetro (`batcal` novo = `batcal` × tensão real / tensão mostrada).
 7. Primeira partida no nível 0, com a mão perto do robô.
 
 ## Console (serial ou Bluetooth, só com o robô parado)
-`?` estado · `p` lista · `nome=valor` muda · `salvar` grava na EEPROM · `padrao` valores de fábrica · `arena=n` grava o número da arena · `ir` quadros IR ao vivo · `s` sensores ao vivo · `r` canais brutos e pino do IR · `res` resumo da última partida · `log` últimos 2,4 s em CSV · `motores` teste das rodas
+`?` estado · `p` lista · `nome=valor` muda · `salvar` grava na EEPROM · `padrao` valores de fábrica · `arena=n` grava o número da arena · `ir` quadros IR (RC5 e NEC) ao vivo · `s` sensores ao vivo · `r` canais brutos e pino do IR · `res` resumo da última partida · `log` últimos 2,4 s em CSV · `motores` teste das rodas
 
 | Parâmetro | Padrão | O que é |
 |---|---|---|
@@ -80,6 +93,7 @@ O KY-022 (J6, no A5) só demodula o infravermelho; quem decodifica é o firmware
 | `perdido` | 100 | ms sem ver a linha até desligar (EVA-RT: 10) |
 | `tmax` | 180 | s até desligar sozinho (0 = sem limite). A partida tem 2 min mais o acréscimo do juiz |
 | `freio`, `tfreio` | 100 / 75 | ré no comando de parada: % do PWM em que vinha, por `tfreio` ms (EVA-RT: −SPEED por 75 ms) |
+| `nec`, `necend`, `necpart`, `necpara` | 0 / 0 / 69 / 70 | controle NEC do kit, só para teste: liga, endereço, tecla de partida, tecla de parada |
 | `comp`, `vref`, `batcal`, `batmin` | 1 / 7600 / 588 / 7000 | compensação do PWM pela bateria; tensão de referência (mV); ajuste do divisor; aviso de bateria baixa |
 
 Saíram em relação ao seguidor: `cruz`, `nmarcas`, `tminvolta` (eram dos sensores de marca).
@@ -105,6 +119,7 @@ O resumo também conta as linhas de partida que a barra cruzou: são 2 por volta
 | faixa atravessada = cruzamento, descartada nas marcas | faixa atravessada = linha de partida, só segura o erro | regra 4.8 |
 | `tmax` 120 s | 180 s | partida de 2 min + acréscimo |
 | EEPROM: parâmetros e calibração | + número da arena; magias diferentes das do seguidor | módulo de início |
+| — | controle NEC do kit do KY-022 opcional (`nec=1`) | testar na bancada |
 
 Igual ao seguidor: ciclo fixo de 1 ms em ponto fixo, posição pelo grupo de sensores em cima da linha, velocidade de reta e de curva com freada na entrada de curva, roda que satura tira das duas, compensação pela bateria, linha perdida continua virando para o lado em que saiu, console e EEPROM, mapa de pinos do EVA-RT (conferido na netlist do `.epro` do Dreamcast v4).
 
@@ -112,7 +127,7 @@ Igual ao seguidor: ciclo fixo de 1 ms em ponto fixo, posição pelo grupo de sen
 ```
 cd firmware/testes
 g++ -O2 -std=c++11 -I../perseguidor sim.cpp ../perseguidor/linha.cpp ../perseguidor/corrida.cpp -o sim && ./sim
-g++ -O2 -std=c++11 -I../perseguidor teste_ir.cpp ../perseguidor/ir_rc5.cpp -o teste_ir && ./teste_ir
+g++ -O2 -std=c++11 -I../perseguidor teste_ir.cpp ../perseguidor/ir.cpp -o teste_ir && ./teste_ir
 ```
 Os dois terminam com "tudo certo" ou listam o que falhou.
 
@@ -123,9 +138,9 @@ Os dois terminam com "tudo certo" ou listam o que falhou.
 
 No circuito, a velocidade de reta (`reta=10`) baixa o tempo de 3 voltas em 7 a 12 %, conforme o motor. O modelo dos motores é inventado (velocidade proporcional ao PWM, atraso de primeira ordem, sem escorregar): serve para conferir a lógica, **não** para escolher ganhos nem prever tempo de volta. Com o motor mais rápido (60 ms), a ré padrão faz o robô voltar ~75 mm depois de parar; com o mais lento (200 ms), ele anda ~270 mm depois do comando. O simulador só avisa: isso é o ajuste de `tfreio` no robô.
 
-**`teste_ir.cpp`** gera a saída do receptor para quadros RC5, com a distorção do receptor (−200 a +300 µs nos pulsos), o atraso da interrupção e a resolução de 4 µs do `micros()`. Confere todos os endereços e comandos (6144 quadros), botão segurado, volta do `micros()`, quadro com pico de ruído (pode se perder, mas nunca vira outro comando), quadro cortado e o significado de cada comando. Em 10 min de pulsos aleatórios apareceu 1 quadro RC5 válido e nenhuma partida, parada ou programação.
+**`teste_ir.cpp`** gera a saída do receptor para quadros RC5 e NEC, com a distorção do receptor (−200 a +300 µs nos pulsos), o atraso da interrupção e a resolução de 4 µs do `micros()`, e passa as bordas pelos dois decodificadores, como no robô. RC5: todos os endereços e comandos (6144 quadros), botão segurado, volta do `micros()`, quadro com pico de ruído (pode se perder, mas nunca vira outro comando) e quadro cortado. NEC: 4608 quadros, endereço estendido, tecla segurada (as repetições são ignoradas) e comando com o inverso errado (descartado). RC5 e NEC alternados não se atrapalham. Em 2 × 10 min de pulsos aleatórios apareceu 1 quadro válido e nenhuma partida, parada ou programação, mesmo com o NEC ligado.
 
-**Tempo de ciclo** medido no `simavr` (ATmega328P, 16 MHz): leitura dos 12 sensores 320 µs + controle 240 µs (máx. 292) + saídas 22 µs = 582 µs em média, 628 µs no pior caso. Cada borda do IR gasta 15–24 µs na interrupção (no máximo 2 bordas por ciclo). O console `res` mostra o maior ciclo e quantos passaram de 1 ms no robô.
+**Tempo de ciclo** medido no `simavr` (ATmega328P, 16 MHz): leitura dos 12 sensores 320 µs + controle 247 µs (máx. 300) + saídas 22 µs = 590 µs em média, 640 µs no pior caso. Cada borda do IR passa pelos dois decodificadores em 21–28 µs (no máximo 2 bordas por ciclo). O console `res` mostra o maior ciclo e quantos passaram de 1 ms no robô.
 
 ## Pendências
 - Tudo acima precisa ser confirmado no robô: mapa do mux, sentido das rodas, lado da barra, IR, ganhos, freio.

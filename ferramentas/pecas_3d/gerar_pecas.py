@@ -34,6 +34,7 @@ MECANICA = RAIZ / "mecânica"
 SAIDA = MECANICA / "stl"
 ORIGINAIS = RAIZ / "referencias" / "eva-rt" / "3d_models"
 ESP_BASE = 1.6             # base RUSH - Dreamcast v4 (pedido na JLC: FR-4 1,6 mm)
+ESP_BARRA = 1.6            # barra V1 (medida pelo Erick em 17/11/2026)
 
 set_circular_segments(96)
 
@@ -272,13 +273,11 @@ def main():
         raise SystemExit(0 if ok else 1)
     SAIDA.mkdir(parents=True, exist_ok=True)
     print(f"STL em {SAIDA.relative_to(RAIZ)}/:")
-    # o patim depende da espessura da barra V1 (medir); a presilha, da base (1,6 mm)
-    for esp in (1.0, 1.6):
-        pasta = SAIDA / f"patim_barra_{esp:.1f}mm"
-        pasta.mkdir(exist_ok=True)
-        p = patim(esp)
-        gravar_stl(p, pasta / f"patim_v1_direito_barra{esp:.1f}.stl", f"patim V1 direito barra {esp:.1f}")
-        gravar_stl(espelhar(p), pasta / f"patim_v1_esquerdo_barra{esp:.1f}.stl", f"patim V1 esquerdo barra {esp:.1f}")
+    # o patim depende da espessura da barra V1; a presilha, da base
+    p = patim(ESP_BARRA)
+    gravar_stl(p, SAIDA / f"patim_v1_direito_barra{ESP_BARRA:.1f}.stl", f"patim V1 direito barra {ESP_BARRA:.1f}")
+    gravar_stl(espelhar(p), SAIDA / f"patim_v1_esquerdo_barra{ESP_BARRA:.1f}.stl",
+               f"patim V1 esquerdo barra {ESP_BARRA:.1f}")
     gravar_stl(presilha_base(), SAIDA / "presilha_vareta_base1.6.stl", "presilha da vareta base 1.6")
     # pecas do EVA-RT usadas como estao (o sensor_sledge fica de fora: substituido pelo patim V1)
     import shutil

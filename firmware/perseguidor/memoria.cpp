@@ -12,7 +12,7 @@
 #define END_ARENA        192
 
 // Diferentes das do seguidor: a EEPROM de um nao vale para o outro
-#define MAGIA_PARAMETROS 0x5051   // mudar a struct Parametros -> somar 1 aqui
+#define MAGIA_PARAMETROS 0x5052   // mudar a struct Parametros -> somar 1 aqui
 #define MAGIA_CALIBRACAO 0x4351
 #define MAGIA_ARENA      0xA5
 

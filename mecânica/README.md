@@ -8,7 +8,7 @@ A base Dreamcast tem os mesmos furos, a mesma borda nas presilhas e a mesma J2 d
 - **Base de 1,6 mm** (pedido na JLC). O `barilla_clamp` do EVA-RT tem rasgo de 1,0 mm. A presilha de reserva para 1,6 mm do seguidor também não serve aqui: com a vareta nivelada, a cabeça do parafuso, por baixo do braço de baixo, ficaria 0,3 mm abaixo da pista. A presilha deste kit não tem o braço de baixo: a parede externa encosta na borda da placa e o parafuso aperta o braço de cima direto na base, com a cabeça embaixo da placa, a 0,8 mm da pista (figura abaixo).
 - **Sem os braços dos sensores de marca.** No lugar do braço há um entalhe na borda (x de ±47,5 a ±50, y de 0,67 a 8,33), entre as duas presilhas de cada lado. As presilhas ficam a 0,17 mm das pontas dele e a vareta passa por cima.
 - **J6 (receptor IR KY-022)** em x = −39,8, y = 4,5, perto da presilha esquerda da frente (0,4 mm da fêmea até ela). O módulo fica em pé acima de tudo.
-- O patim, a vareta, o bloco da transversal, a carcaça da ventoinha e a distância de **63,14 mm entre furos** (L = 107,1 mm) são os do seguidor. A distância é ajustável: é só deslizar o patim na vareta.
+- O patim (versão para barra de 1,6 mm, a espessura da V1), a vareta, o bloco da transversal, a carcaça da ventoinha e a distância de **63,14 mm entre furos** (L = 107,1 mm) são os do seguidor. A distância é ajustável: é só deslizar o patim na vareta.
 
 ![Corte pela presilha](conferencia/corte_presilha.png)
 
@@ -16,7 +16,8 @@ A base Dreamcast tem os mesmos furos, a mesma borda nas presilhas e a mesma J2 d
 | Arquivo | Qtde | Origem | Função |
 |---|---|---|---|
 | `presilha_vareta_base1.6.stl` | 4 | **nova** | presilha da vareta na base de 1,6 mm (sem braço de baixo) |
-| `patim_barra_1.0mm/` ou `patim_barra_1.6mm/` | 1 + 1 | seguidor | patim da barra V1, direito e esquerdo: **medir a espessura da V1** e imprimir a pasta certa |
+| `patim_v1_direito_barra1.6.stl` | 1 | seguidor | patim da barra V1 (1,6 mm), lado direito (+x) |
+| `patim_v1_esquerdo_barra1.6.stl` | 1 | seguidor | patim da barra V1 (1,6 mm), lado esquerdo |
 | `barilla_connection.stl` | 2 | EVA-RT | une a vareta longitudinal à transversal |
 | `gearbox.stl` | 1 | EVA-RT | caixa de redução **direita** (pinhão para fora) |
 | `gearbox_esquerdo_espelhado.stl` | 1 | EVA-RT espelhado | caixa de redução esquerda (o EVA-RT publica só um lado) |
@@ -47,7 +48,7 @@ Mesma recomendação do seguidor (o EVA-RT não informa material):
 | Vareta de carbono Ø3 mm × 94 mm | 3 | 2 longitudinais + 1 transversal |
 | Vareta de carbono Ø3 mm × ~80 mm | 1 | traseira, entre as caixas de redução (comprimento estimado, medir na montagem) |
 | Parafuso M2 × 6 + porca M2 | 4 | presilhas: cabeça por baixo da base, porca em cima do braço de cima (base 1,6 + braço 1,0 + porca 1,6 = 4,2 mm) |
-| Parafuso M2 × 8 + porca M2 | 2 | patins (cabeça por baixo, porca em cima) |
+| Parafuso M2 × 8 + porca M2 | 2 | patins (cabeça por baixo, porca em cima): braço 1,0 + barra 1,6 + folga 0,1 + bloco 3,5 + porca 1,6 = 7,8 mm, justo; M2 × 10 dá folga |
 | Parafuso M2 × 6 + porca M2 | 4 | caixas de redução: pé de 2,5 + base 1,6 + porca 1,6 = 5,7 mm, sem sobra; se a porca não pegar a rosca inteira, M2 × 8 |
 | Parafuso M2 × 6, rosca direto no plástico | 4 | por baixo: placa de sucção → base → pés da carcaça (furo Ø1,85, 5 mm de fundo; entram 3,8 mm) |
 | Rolamento 692ZZ (2 × 6 × 3) | 4 | dois por aro |
@@ -63,44 +64,45 @@ Total: 12× M2 × 6, 2× M2 × 8, 10 porcas M2 (as mesmas do seguidor). Cabeça 
 6. Deslizar a barra até **63,14 mm** entre o furo da frente da base e o furo da barra, ou 57,89 mm entre a face da frente da presilha dianteira e a face de trás do patim. Conferir os dois lados iguais e apertar.
 7. Com a distância aprovada na pista, uma gota de cola (cianoacrilato) em cada patim e cada presilha.
 
-Resultado esperado: varetas paralelas em x = ±48,45, barra a 4,0 mm da pista (barra de 1,0 mm; 3,4 mm com barra de 1,6), L = 107,1 mm.
+Resultado esperado: varetas paralelas em x = ±48,45, face de baixo da barra a 3,4 mm da pista (QRE a ~1,7 mm; com barra de 1,0 mm seriam 4,0 e ~2,3), L = 107,1 mm.
 
 ## Conferência 3D (`ferramentas/pecas_3d/conferir_montagem.py`)
-Monta a base lida do `.epro` v4 (com 1,6 mm), a V1 lida do Gerber, varetas, presilhas, blocos, carcaça, patins, parafusos, porcas, placa de sucção e o KY-022.
+Monta a base lida do `.epro` v4 (com 1,6 mm), a V1 lida do Gerber (com 1,6 mm), varetas, presilhas, blocos, carcaça, patins, parafusos, porcas, placa de sucção, o KY-022 e uma barra de pinos deitada no J3.
 - Nenhuma interferência, a não ser a parede da presilha, que entra 0,05 mm na borda da base, como o `barilla_clamp` no próprio EVA-RT.
 - Porca da presilha: com uma face virada para a vareta, fica a 0,2 mm do ressalto (como no original) e a 1,2 mm da vareta.
 - KY-022 (medidas típicas do módulo, não medidas; receptor virado para qualquer lado): mais de 5 mm de tudo.
 
 **Altura até a pista**, com a vareta paralela à pista (pneu de ~22 mm: o eixo da roda fica 7,0 mm acima da base pela caixa de redução):
 
-| Peça | Altura (mm) | Com base de 1,0 mm (EVA-RT) |
+| Peça | Altura (mm) | Com base e barra de 1,0 mm (como o EVA-RT) |
 |---|---|---|
 | face de baixo da base | 2,4 | 3,0 |
 | placa de sucção | 1,8 | 2,4 |
 | presilhas | 2,3 | 2,0 |
 | cabeça do parafuso das presilhas | 0,8 | 0,4 |
 | cabeça do parafuso das caixas de redução | 0,8 | 1,4 |
-| cabeça do parafuso dos patins | 1,3 | 1,3 |
+| J3: parte preta da barra de pinos deitada | 0,8 (menos a solda) | 1,4 |
+| cabeça do parafuso dos patins | 0,7 | 1,3 |
 | bloco da transversal | 3,0 | 3,0 |
-| face de baixo da barra V1 (1,0 mm) | 4,0 | 4,0 |
+| face de baixo da barra V1 | 3,4 | 4,0 |
 
 O resto da mecânica fica em cima da base, então a base mais grossa aproxima da pista tudo o que fica embaixo dela. O regulamento admite desníveis de ±3 mm nas emendas da manta (regra 4.2): conferir na pista se a placa de sucção ou as cabeças raspam. Pneu maior levanta a traseira (1 mm a mais no raio ≈ 0,7 mm a mais nas presilhas).
 
 ![Vista de cima](conferencia/montagem_vista_de_cima.png)
 ![Corte longitudinal](conferencia/corte_longitudinal.png)
 
-O corte pelo patim (`conferencia/corte_patim.png`) e a comparação com o patim original (`conferencia/patim_original_x_novo.png`) são os mesmos do seguidor: dependem só da barra.
+O corte pelo patim (`conferencia/corte_patim.png`) e a comparação com o patim original (`conferencia/patim_original_x_novo.png`) dependem só da barra (aqui, com 1,6 mm).
 
 Para refazer (Python 3 com `pip install -r ferramentas/pecas_3d/requisitos.txt`):
 ```
 python3 ferramentas/pecas_3d/gerar_pecas.py
-python3 ferramentas/pecas_3d/conferir_montagem.py --furos 63.14 --esp-barra 1.0
+python3 ferramentas/pecas_3d/conferir_montagem.py --furos 63.14 --esp-barra 1.6
 ```
 Mudou a distância entre furos ou a espessura da barra: rodar de novo o `conferir_montagem.py`.
 
 ## Cuidados
-- **Espessura da V1: medir.** O Gerber não informa. Com 1,6 mm a barra fica a 3,4 mm da pista e a cabeça do parafuso do patim a ~0,7 mm.
-- **J3 (gravação, embaixo):** a base fica ~2,4 mm acima da pista. Uma barra de pinos deitada soldada ali (~2,5 mm) encostaria na pista; gravar encostando os pinos nos pads ou com algo de no máximo ~2 mm.
+- **J3 (gravação, embaixo):** barra de pinos reta deitada, com os pinos curtos soldados nos pads e a parte preta encostada na borda de trás (y = −30). Os pads acabam a 0,3 mm da borda, então a parte preta fica atrás da placa, centrada no pino, e a 0,8 mm da pista menos a espessura da solda. Não deixar a parte preta embaixo da placa.
+- **Cabeças de parafuso:** as dos patins (0,7 mm), das presilhas e das caixas (0,8 mm) são as partes mais baixas depois do esqui. Cabeça mais alta que 1,6 mm encosta na pista.
 - **Receptor IR:** o KY-022 fica em pé na J6. Deixar o receptor com vista para onde o juiz fica com o controle.
 - **Carcaça da ventoinha:** montar com os dois pés de orelha para a frente.
 - **Carbono conduz.** A transversal deita sobre a máscara de solda da base. Sob ela não há via nem pad exposto; os pads mais próximos são os da J2, a 0,7 mm.

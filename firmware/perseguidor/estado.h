@@ -6,6 +6,7 @@
 #pragma once
 
 #include "corrida.h"
+#include "ir.h"
 
 extern Parametros P;
 extern Calibracao cal;
@@ -16,6 +17,9 @@ extern uint16_t   cicloMaxUs;        // maior tempo de um ciclo na ultima partid
 extern uint16_t   ciclosAtrasados;   // ciclos que passaram de PERIODO_US
 extern uint8_t    arena;             // numero da arena do modulo de inicio (par)
 extern bool       arenaGravada;      // o juiz (ou o console) ja gravou um numero
+
+// perseguidor.ino: regras do IR com o numero da arena e os parametros atuais
+RegrasIR regrasIR();
 
 // console.cpp (so e chamado com o robo parado)
 void consoleProcessar();

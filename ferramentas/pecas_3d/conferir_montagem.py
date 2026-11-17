@@ -9,7 +9,7 @@ do EVA-RT ((c) EXOTIC TEAM MX, AGPL-3.0). Referencial do robo: origem no centro
 da ventoinha, +x direita, +y frente, z = 0 na face de cima da base.
 Adaptado da conferencia do seguidor RUSH - SATURN (therickmatos/Seguidor-de-linha).
 
-Uso: python3 conferir_montagem.py [--furos 63.14] [--esp-barra 1.0]
+Uso: python3 conferir_montagem.py [--furos 63.14] [--esp-barra 1.6]
 """
 from __future__ import annotations
 
@@ -61,6 +61,10 @@ FUROS_CAIXA = ((-35.25, -26.55), (-35.25, -3.733), (35.25, -26.55), (35.25, -3.7
 # femea 2,54 x 7,62 x 8,5; placa do modulo 15 (largura) x 18,5 (altura) x 1,6, a ~1,5 mm
 # acima da femea; receptor de ~6 mm saindo de uma das faces (para dentro ou para fora).
 KY022 = dict(femea=(2.54, 7.62, 8.5), placa=(1.6, 15.0, 18.5), folga_pino=1.5, receptor=6.0)
+# J3 (gravacao): barra de pinos reta deitada embaixo, pinos curtos soldados nos pads e
+# a parte preta (2,54 x 2,54) encostada na borda de tras da base, em y = -30,0
+J3_PINO = 0.64
+J3_BORDA = -30.0
 
 
 # ----------------------------------------------------------------------------
@@ -237,6 +241,12 @@ def montar(dist_furos: float, esp_barra: float, patim_dir: Manifold, desl_patim:
         s[f"cabeca_caixa_{k}"] = cil_z(xc, yc, -ESP_BASE - CABECA_M2[1], -ESP_BASE, CABECA_M2[0])
     # placa de succao por baixo da base, centrada na ventoinha (furos nos pes da carcaca)
     s["placa_succao"] = stl("suction_base.stl").translate((0, -27.5, -ESP_BASE - 0.6))
+    # J3 deitado: pinos sob os pads, corpo atras da borda, centrado no pino
+    j3 = comps["J3"]
+    zp = -ESP_BASE - J3_PINO / 2
+    s["J3_pinos"] = Manifold.cube((5 * 2.54, J3_BORDA - (j3[1] - 0.95) + 2.54 + 6, J3_PINO)).translate(
+        (j3[0] - 2.5 * 2.54, J3_BORDA - 2.54 - 6, -ESP_BASE - J3_PINO))
+    s["J3_corpo"] = Manifold.cube((5 * 2.54, 2.54, 2.54)).translate((j3[0] - 2.5 * 2.54, J3_BORDA - 2.54, zp - 1.27))
     # receptor IR no J6
     j6 = comps["J6"]
     fx, fy, fz = KY022["femea"]
@@ -287,7 +297,8 @@ def relatorio(s, d, esp_barra):
               ("barra_v1", "bloco_esq"), ("placa_succao", "base"),
               ("KY022_modulo", "vareta_esq"), ("KY022_modulo", "presilha_esq_1"),
               ("KY022_modulo", "carcaca_ventoinha"), ("KY022_modulo", "bloco_esq"),
-              ("J6_femea", "vareta_esq"), ("J6_femea", "presilha_esq_1")]
+              ("J6_femea", "vareta_esq"), ("J6_femea", "presilha_esq_1"),
+              ("J3_corpo", "base"), ("J3_corpo", "placa_succao")]
     pior = 0.0
     for a, b in pares:
         v = inter(s[a], s[b])
@@ -317,6 +328,7 @@ def relatorio(s, d, esp_barra):
               ("bloco da transversal", ["bloco_dir", "bloco_esq"]),
               ("barra V1 (face de baixo)", ["barra_v1"]),
               ("cabeca do parafuso dos patins", [n for n in s if n.startswith("cabeca_patim")]),
+              ("J3 deitado (parte preta)", ["J3_corpo"]),
               ("esqui do patim", ["patim_dir", "patim_esq"])]
     alturas = {}
     for rot, nomes in grupos:
@@ -587,7 +599,7 @@ def fig_patim_3d(esp_barra, arq):
 def main():
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--furos", type=float, default=63.14, help="distancia entre furos base-barra (mm)")
-    ap.add_argument("--esp-barra", type=float, default=1.0, help="espessura da barra V1 (mm)")
+    ap.add_argument("--esp-barra", type=float, default=gp.ESP_BARRA, help="espessura da barra V1 (mm)")
     ap.add_argument("--sem-figuras", action="store_true")
     a = ap.parse_args()
     s, d = montar(a.furos, a.esp_barra, gp.patim(a.esp_barra), gp.DESL_PATIM_V1)

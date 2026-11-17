@@ -15,7 +15,7 @@
  *   salvar       grava os parametros na EEPROM
  *   padrao       volta aos valores de fabrica (nao grava)
  *   arena=n      grava o numero da arena do modulo de inicio (par, 0..126)
- *   ir           mostra os quadros RC5 recebidos (qualquer tecla para)
+ *   ir           mostra os quadros RC5 e NEC recebidos (qualquer tecla para)
  *   s            sensores normalizados e erro (qualquer tecla para)
  *   r            leitura bruta dos 16 canais do mux, pino do IR e bateria
  *   res          resumo da ultima partida
@@ -68,6 +68,10 @@ static const Descritor TABELA[] PROGMEM = {
   PARAM(tmax, T_U16, 0, 600),
   PARAM(freio, T_U16, 0, 300),
   PARAM(tfreio, T_U16, 0, 1000),
+  PARAM(nec, T_U8, 0, 1),
+  PARAM(necend, T_U16, 0, 65535),
+  PARAM(necpart, T_U8, 0, 255),
+  PARAM(necpara, T_U8, 0, 255),
   PARAM(comp, T_U8, 0, 1),
   PARAM(vref, T_U16, 6000, 9000),
   PARAM(batcal, T_U16, 300, 900),
@@ -179,6 +183,14 @@ void consoleArena() {
   Serial.print(IR_END_PARTIDA);
   Serial.print(F(" cmd "));
   Serial.println(arena);
+  if (P.nec) {
+    Serial.print(F("ATENCAO: controle NEC ligado, so para teste (nec=0 antes de competir): end "));
+    Serial.print(P.necend);
+    Serial.print(F(", partida cmd "));
+    Serial.print(P.necpart);
+    Serial.print(F(", parada cmd "));
+    Serial.println(P.necpara);
+  }
 }
 
 void consoleEstado() {
@@ -328,25 +340,29 @@ static void fluxoBruto() {
   esvaziarEntrada();
 }
 
-// Quadros RC5 recebidos e o que significam para este robo
+// Quadros RC5 e NEC recebidos e o que significam para este robo
 static void fluxoIR() {
   consoleArena();
   Serial.println(F("aperte os botoes do controle (qualquer tecla para)"));
-  QuadroRC5 q;
+  const RegrasIR r = regrasIR();
+  QuadroIR q;
   hwIrQuadro(q);   // descarta um quadro antigo
   while (!interrompido()) {
     if (!hwIrQuadro(q)) continue;
-    Serial.print(F("end "));
+    Serial.print(q.protocolo == IR_NEC ? F("NEC end ") : F("RC5 end "));
     Serial.print(q.endereco);
     Serial.print(F(" cmd "));
     Serial.print(q.comando);
     Serial.print(F(" T "));
     Serial.print(q.toggle);
-    switch (interpretarRC5(q, arena, IR_PARADA_QUALQUER_ID, IR_END_PROGRAMA, IR_END_PARTIDA)) {
+    switch (interpretarIR(q, r)) {
       case IR_PARTIDA:  Serial.println(F("  = PARTIDA")); break;
       case IR_PARADA:   Serial.println(F("  = PARADA")); break;
       case IR_PROGRAMA: Serial.println(F("  = PROGRAMAR (aqui nao grava; use fora do 'ir')")); break;
-      default:          Serial.println(F("  (outra arena ou outro aparelho)")); break;
+      default:
+        Serial.println(q.protocolo == IR_NEC && !P.nec ? F("  (NEC desligado: nec=1 para testar)")
+                                                       : F("  (outra arena ou outro aparelho)"));
+        break;
     }
     hwLedC(true);
     delay(30);

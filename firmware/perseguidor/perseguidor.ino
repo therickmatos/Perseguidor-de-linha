@@ -9,7 +9,8 @@
 
       DRIVERS:            2x DRV8874 (PH/EN)
       SENSORES:           barra V1 de 12 QRE1113 + 74HC4067
-      MODULO DE INICIO:   receptor IR KY-022 no A5, padrao startmodule.com (RC5)
+      MODULO DE INICIO:   receptor IR KY-022 no A5, padrao startmodule.com (RC5);
+                          controle NEC do kit do KY-022 opcional, so para teste
       MICROCONTROLADOR:   ATmega328P-AU (mapa de pinos do EVA-RT 1.2.2)
       BATERIA:            2S
       CONTROLE:           PD, ciclo fixo de 1 ms
@@ -35,7 +36,7 @@
     params.h      ganhos e velocidades (console serial, EEPROM)
     linha.*       calibracao e posicao da linha
     corrida.*     largada, PD, reta x curva, parada
-    ir_rc5.*      decodificador RC5 e comandos do modulo de inicio
+    ir.*          decodificadores RC5 e NEC e comandos do modulo de inicio
     hw.*          ADC, mux, motores, ventoinha, LEDs, botoes, bateria, IR
     memoria.*     EEPROM
     console.cpp   comandos pela serial
@@ -58,7 +59,7 @@
 #include "params.h"
 #include "linha.h"
 #include "corrida.h"
-#include "ir_rc5.h"
+#include "ir.h"
 #include "hw.h"
 #include "memoria.h"
 #include "estado.h"
@@ -139,29 +140,42 @@ static void avisarBateria() {
 
 // ---------------------------------------------------------------- modulo de inicio
 
-static QuadroRC5 irUltimo;
-static uint32_t  irUltimoMs = 0;
-static bool      irTemUltimo = false;
+static QuadroIR irUltimo;
+static uint32_t irUltimoMs = 0;
+static bool     irTemUltimo = false;
+
+RegrasIR regrasIR() {
+  RegrasIR r;
+  r.arena = arena;
+  r.paradaQualquer = IR_PARADA_QUALQUER_ID;
+  r.endPrograma = IR_END_PROGRAMA;
+  r.endPartida = IR_END_PARTIDA;
+  r.nec = P.nec;
+  r.necEndereco = P.necend;
+  r.necPartida = P.necpart;
+  r.necParada = P.necpara;
+  return r;
+}
 
 // Le o quadro mais novo (se houver) e diz o que ele e para este robo.
 // Repeticao do mesmo aperto (mesmo T) e descartada. Nao escreve na serial:
 // tambem e chamada durante a partida.
-static ComandoIR lerIR(QuadroRC5 &q) {
+static ComandoIR lerIR(QuadroIR &q) {
   if (!hwIrQuadro(q)) return IR_NADA;
   const uint32_t agora = millis();
-  const bool repeticao = irTemUltimo && q.endereco == irUltimo.endereco &&
-                         q.comando == irUltimo.comando && q.toggle == irUltimo.toggle &&
-                         (agora - irUltimoMs) < IR_REPETICAO_MS;
+  const bool repeticao = irTemUltimo && q.protocolo == irUltimo.protocolo &&
+                         q.endereco == irUltimo.endereco && q.comando == irUltimo.comando &&
+                         q.toggle == irUltimo.toggle && (agora - irUltimoMs) < IR_REPETICAO_MS;
   irUltimo = q;
   irUltimoMs = agora;
   irTemUltimo = true;
   if (repeticao) return IR_NADA;
-  return interpretarRC5(q, arena, IR_PARADA_QUALQUER_ID, IR_END_PROGRAMA, IR_END_PARTIDA);
+  return interpretarIR(q, regrasIR());
 }
 
 // Com o robo parado: le, avisa na serial e ja grava o numero da arena.
 static ComandoIR tratarIR() {
-  QuadroRC5 q;
+  QuadroIR q;
   ComandoIR c = lerIR(q);
   if (c == IR_NADA) return c;
   if (c == IR_PROGRAMA) {
@@ -171,11 +185,11 @@ static ComandoIR tratarIR() {
     consoleArena();
     piscar(hwLeds, 3, 80);
   } else if (c == IR_OUTRO) {
-    Serial.print(F("IR: endereco "));
+    Serial.print(q.protocolo == IR_NEC ? F("IR NEC: endereco ") : F("IR RC5: endereco "));
     Serial.print(q.endereco);
     Serial.print(F(" comando "));
     Serial.print(q.comando);
-    Serial.println(F(" (nao e para esta arena)"));
+    Serial.println(F(" (nao e para este robo)"));
     piscar(hwLedC, 2, 40);
   }
   return c;
@@ -296,7 +310,7 @@ static uint16_t telaPronto() {
 static void correr(uint16_t esperaMs) {
   uint8_t bruto[N_CANAIS];
   Saida s;
-  QuadroRC5 q;
+  QuadroIR q;
   uint8_t botao = 0, divisor = 0;
 
   cicloMaxUs = 0;
